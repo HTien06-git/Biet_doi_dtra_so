@@ -5,7 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Sparkles, User, Users, ShieldAlert } from 'lucide-react';
+import { Search, Sparkles, User, Users, ShieldAlert, Shield, Settings } from 'lucide-react';
+import Link from 'next/link';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
 import { DetectiveIllustration } from '@/assets/illustrations';
@@ -54,9 +55,9 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-game-backdrop flex flex-col items-center justify-center p-4 relative overflow-hidden text-[#1E293B]">
+    <div className="min-h-screen bg-game-backdrop flex flex-col items-center justify-center p-4 relative overflow-hidden text-[#0F172A]">
       {/* Sunburst Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-[#FDE68A]/40 pointer-events-none -z-10 blur-2xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-[#1A1AFF]/10 pointer-events-none -z-10 blur-3xl" />
 
       {/* Main Container */}
       <motion.div
@@ -72,10 +73,10 @@ export default function WelcomeScreen() {
             AN TOÀN THÔNG TIN 2026
             <GameIcon type="star" size="sm" theme="amber" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-display font-black uppercase tracking-tight text-[#3E2723] drop-shadow-[0_2px_0_#FFCA28]">
+          <h1 className="text-3xl sm:text-4xl font-display font-black uppercase tracking-tight text-[#0F172A] drop-shadow-sm">
             ĐỘI ĐIỀU TRA SỐ
           </h1>
-          <div className="game-yellow-banner inline-block px-5 py-1 text-sm sm:text-base font-black uppercase mt-1 rotate-[1deg]">
+          <div className="game-blue-banner inline-block px-5 py-1 text-sm sm:text-base font-black uppercase mt-1 rotate-[1deg] shadow-[0_4px_0_#000066]">
             VƯỢT TRẠM PHÁ ÁN
           </div>
         </div>
@@ -89,13 +90,13 @@ export default function WelcomeScreen() {
             <DetectiveIllustration className="w-28 h-28 sm:w-32 sm:h-32 drop-shadow-md" />
           </motion.div>
 
-          <div className="bg-white border-3 border-[#4A2C11] rounded-2xl p-3 max-w-[200px] text-xs font-bold text-[#3E2723] leading-snug shadow-[0_3px_0_#4A2C11]">
+          <div className="bg-white border-3 border-[#1E293B] rounded-2xl p-3 max-w-[200px] text-xs font-bold text-[#0F172A] leading-snug shadow-[0_3px_0_#1E293B]">
             Chào đồng chí! Hãy ghi danh để nhận lệnh phá án khẩn cấp!
           </div>
         </div>
 
         {/* Input Form Card */}
-        <div className="game-card p-6 space-y-4 bg-white">
+        <div className="game-card p-6 space-y-4 bg-white border-[#1E293B]">
           {error && (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -108,8 +109,8 @@ export default function WelcomeScreen() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-display font-black uppercase text-[#3E2723] flex items-center gap-1.5">
-              <User className="w-4 h-4 text-[#D97706]" />
+            <label className="text-xs font-display font-black uppercase text-[#0F172A] flex items-center gap-1.5">
+              <User className="w-4 h-4 text-[#1A1AFF]" />
               Tên Điều Tra Viên
             </label>
             <input
@@ -117,13 +118,13 @@ export default function WelcomeScreen() {
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="VD: Thám tử Minh, Hoàng Nam..."
-              className="w-full px-4 py-3 rounded-xl border-3 border-[#4A2C11] bg-[#FFFDF9] font-bold text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#FFCA28] shadow-[0_2px_0_#4A2C11]"
+              className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] shadow-[0_2px_0_#1E293B]"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-display font-black uppercase text-[#3E2723] flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-[#2563EB]" />
+            <label className="text-xs font-display font-black uppercase text-[#0F172A] flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-[#1A1AFF]" />
               Mã Số Đội Thi Đấu
             </label>
             <input
@@ -131,15 +132,15 @@ export default function WelcomeScreen() {
               value={teamCode}
               onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
               placeholder="VD: CYBER-01, TEAM-A..."
-              className="w-full px-4 py-3 rounded-xl border-3 border-[#4A2C11] bg-[#FFFDF9] font-bold text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#FFCA28] shadow-[0_2px_0_#4A2C11] uppercase"
+              className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] shadow-[0_2px_0_#1E293B] uppercase"
             />
           </div>
 
-          {/* 3D Tactile Amber Button */}
+          {/* 3D Tactile Primary Button #1A1AFF */}
           <button
             onClick={handleStart}
             disabled={isLoading}
-            className="w-full py-4 btn-game btn-game-amber text-base tracking-wide flex items-center justify-center gap-2 mt-2"
+            className="w-full py-4 btn-game btn-game-primary text-base tracking-wide flex items-center justify-center gap-2 mt-2 shadow-[0_6px_0_#000066]"
           >
             {isLoading ? (
               <span className="animate-spin text-xl">🔍</span>
@@ -153,10 +154,17 @@ export default function WelcomeScreen() {
           </button>
         </div>
 
-        {/* Footer Note */}
-        <p className="text-center text-[11px] font-bold text-[#64748B]">
-          Đại Học / Học Viện An Toàn Số · 4 Vụ Án · 20 Trạm Thử Thách
-        </p>
+        {/* Footer Note & Admin Entrance */}
+        <div className="flex flex-col sm:flex-row items-center justify-between text-[11px] font-bold text-[#64748B] px-2 gap-2">
+          <span>Đại Học / Học Viện An Toàn Số · 4 Vụ Án · 20 Trạm</span>
+          <Link
+            href="/admin"
+            className="hover:text-[#1A1AFF] underline flex items-center gap-1 transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Quản trị Admin
+          </Link>
+        </div>
       </motion.div>
     </div>
   );

@@ -26,6 +26,9 @@ export interface CaseProgress {
   cluesCollected: number;
   stationsCompleted: number;
   isCompleted: boolean;
+  startTime?: string;
+  completionTime?: string;
+  durationSeconds?: number;
 }
 
 export interface GameState {
@@ -129,21 +132,39 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'SET_SCREEN':
       return { ...state, currentScreen: action.payload };
 
-    case 'SELECT_CASE':
+    case 'SELECT_CASE': {
+      const caseId = action.payload;
+      const cp = { ...state.caseProgress };
+      if (cp[caseId] && !cp[caseId].startTime) {
+        cp[caseId] = {
+          ...cp[caseId],
+          startTime: new Date().toISOString(),
+        };
+      }
       return {
         ...state,
-        currentCaseId: action.payload,
+        currentCaseId: caseId,
         currentStationIndex: 0,
         currentScreen: 'stations',
+        caseProgress: cp,
         selectedAnswers: [],
         isAnswerChecked: false,
         showResultDialog: false,
         resultDialogType: null,
       };
+    }
 
     case 'SET_STATION': {
+      const cp = { ...state.caseProgress };
+      if (state.currentCaseId && cp[state.currentCaseId] && !cp[state.currentCaseId].startTime) {
+        cp[state.currentCaseId] = {
+          ...cp[state.currentCaseId],
+          startTime: new Date().toISOString(),
+        };
+      }
       return {
         ...state,
+        caseProgress: cp,
         currentStationIndex: action.payload,
         currentScreen: 'playing',
         selectedAnswers: [],
@@ -193,6 +214,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       caseP.cluesCollected = stations.filter((s) => s.clueUnlocked).length;
       caseP.stationsCompleted = stations.filter((s) => s.completed).length;
       caseP.isCompleted = caseP.stationsCompleted === 5;
+      if (caseP.isCompleted && !caseP.completionTime) {
+        caseP.completionTime = new Date().toISOString();
+        const startMs = caseP.startTime ? new Date(caseP.startTime).getTime() : Date.now() - 60000;
+        caseP.durationSeconds = Math.max(1, Math.round((new Date(caseP.completionTime).getTime() - startMs) / 1000));
+      }
       cp[state.currentCaseId] = caseP;
       return {
         ...state,
@@ -217,6 +243,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       caseP2.stations = stations2;
       caseP2.stationsCompleted = stations2.filter((s) => s.completed).length;
       caseP2.isCompleted = caseP2.stationsCompleted === 5;
+      if (caseP2.isCompleted && !caseP2.completionTime) {
+        caseP2.completionTime = new Date().toISOString();
+        const startMs = caseP2.startTime ? new Date(caseP2.startTime).getTime() : Date.now() - 60000;
+        caseP2.durationSeconds = Math.max(1, Math.round((new Date(caseP2.completionTime).getTime() - startMs) / 1000));
+      }
       cp2[state.currentCaseId] = caseP2;
       return {
         ...state,
@@ -229,8 +260,20 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'NEXT_STATION': {
       const nextIdx = state.currentStationIndex + 1;
       if (nextIdx >= 5) {
+        const cp3 = { ...state.caseProgress };
+        if (state.currentCaseId && cp3[state.currentCaseId]) {
+          const caseP3 = { ...cp3[state.currentCaseId] };
+          caseP3.isCompleted = true;
+          if (!caseP3.completionTime) {
+            caseP3.completionTime = new Date().toISOString();
+            const startMs = caseP3.startTime ? new Date(caseP3.startTime).getTime() : Date.now() - 60000;
+            caseP3.durationSeconds = Math.max(1, Math.round((new Date(caseP3.completionTime).getTime() - startMs) / 1000));
+          }
+          cp3[state.currentCaseId] = caseP3;
+        }
         return {
           ...state,
+          caseProgress: cp3,
           currentScreen: 'summary',
           showResultDialog: false,
           resultDialogType: null,
@@ -382,7 +425,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         clues_collected: cp.cluesCollected,
         stations_completed: cp.stationsCompleted,
         is_completed: cp.isCompleted,
-        completion_time: cp.isCompleted ? new Date().toISOString() : undefined,
+        start_time: cp.startTime,
+        completion_time: cp.completionTime || (cp.isCompleted ? new Date().toISOString() : undefined),
+        duration_seconds: cp.durationSeconds,
       };
       return savePlayerSession(session);
     });
@@ -409,6 +454,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
                 cluesCollected: s.clues_collected,
                 stationsCompleted: s.stations_completed,
                 isCompleted: s.is_completed,
+                startTime: s.start_time,
+                completionTime: s.completion_time,
+                durationSeconds: s.duration_seconds,
               };
             }
           });

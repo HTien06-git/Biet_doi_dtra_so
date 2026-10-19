@@ -2,12 +2,13 @@
 @import "../styles/case-hunter.css";
 
 :root {
-  /* Bright Sunny 2D Palette */
-  --color-bg-primary: #FDF6E3;
-  --color-bg-secondary: #FFFDF9;
+  /* Silver Metallic & Electric Blue Palette */
+  --color-bg-primary: #E2E8F0;
+  --color-bg-secondary: #F8FAFC;
   --color-bg-card: #FFFFFF;
-  --color-border: #4A2C11;
-  --color-text-primary: #1E293B;
+  --color-primary: #1A1AFF;
+  --color-border: #1E293B;
+  --color-text-primary: #0F172A;
   --color-text-secondary: #64748B;
 }
 
@@ -21,8 +22,8 @@ html {
 
 body {
   font-family: var(--font-sans), 'Be Vietnam Pro', system-ui, sans-serif;
-  background-color: #FDF6E3;
-  color: #1E293B;
+  background-color: #E2E8F0;
+  color: #0F172A;
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -38,13 +39,13 @@ h1, h2, h3, h4, h5, h6 {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #FDF6E3;
+  background: #E2E8F0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D97706;
+  background: #1A1AFF;
   border-radius: 4px;
-  border: 2px solid #FDF6E3;
+  border: 2px solid #E2E8F0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B45309;
+  background: #0000CC;
 }

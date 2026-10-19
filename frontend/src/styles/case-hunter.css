@@ -1,42 +1,45 @@
 /* ============================================================================
-   CASE HUNTER 2D GAME STYLESHEET (BRIGHT & HIGH CONTRAST)
-   Tông màu kem ấm, viền nâu sẫm 3D, nút bấm tactile game rực rỡ, 100% chuẩn font
+   CASE HUNTER 2D GAME STYLESHEET (SILVER METALLIC & ELECTRIC BLUE #1A1AFF)
+   Tông màu bạc sáng hiện đại, xanh chủ đạo #1A1AFF, nút bấm tactile game 3D
    ============================================================================ */
 
 :root {
-  /* Warm Sunny Game Backdrop */
-  --game-bg-main: #FDF6E3;
-  --game-bg-cream: #FFFDF9;
-  --game-bg-warm: #FEF3C7;
+  /* Silver Metallic Game Backdrop */
+  --game-bg-main: #E2E8F0;
+  --game-bg-silver-light: #F8FAFC;
+  --game-bg-silver: #F1F5F9;
+  --game-bg-silver-dark: #CBD5E1;
   --game-bg-card: #FFFFFF;
 
-  /* Game Borders & Shadows (Deep Rich Brown) */
-  --game-border: #4A2C11;
-  --game-border-dark: #331A05;
-  --game-shadow-color: #3E2723;
+  /* Primary Electric Blue */
+  --game-primary: #1A1AFF;
+  --game-primary-light: #4D4DFF;
+  --game-primary-dark: #0000CC;
+  --game-primary-shadow: #000088;
+
+  /* Game Borders & Shadows (Deep Slate / Dark Charcoal) */
+  --game-border: #1E293B;
+  --game-border-dark: #0F172A;
+  --game-shadow-color: #1E293B;
   --game-shadow-sm: 0 3px 0 var(--game-shadow-color);
   --game-shadow-md: 0 5px 0 var(--game-shadow-color);
   --game-shadow-lg: 0 8px 0 var(--game-shadow-color);
 
-  /* Vivid 2D Game Palette */
+  /* Vivid 2D Game Accents */
   --game-amber: #FFB300;
-  --game-amber-dark: #F57C00;
   --game-yellow: #FFCA28;
   --game-yellow-bright: #FDE047;
   --game-red: #EF4444;
   --game-red-dark: #DC2626;
   --game-green: #10B981;
   --game-green-dark: #059669;
-  --game-blue: #3B82F6;
-  --game-blue-dark: #2563EB;
-  --game-wood: #8B4513;
-  --game-wood-light: #A0522D;
+  --game-blue: #1A1AFF;
 
   /* Typography Colors */
-  --game-text-main: #1E293B;
+  --game-text-main: #0F172A;
+  --game-text-dark: #1E293B;
   --game-text-muted: #64748B;
-  --game-text-brown: #3E2723;
-  --game-text-red: #8D230F;
+  --game-text-white: #FFFFFF;
 }
 
 /* ============================================================================
@@ -51,14 +54,15 @@
 }
 
 /* ============================================================================
-   Backdrop Textures
+   Silver Metallic Backdrop Textures
    ============================================================================ */
 .bg-game-backdrop {
-  background-color: #FDF6E3;
+  background-color: #E2E8F0;
   background-image: 
-    radial-gradient(#FDE68A 1.5px, transparent 1.5px),
-    linear-gradient(180deg, #FEF3C7 0%, #FDF6E3 100%);
-  background-size: 20px 20px, 100% 100%;
+    radial-gradient(#CBD5E1 1.5px, transparent 1.5px),
+    linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 50%, #CBD5E1 100%);
+  background-size: 24px 24px, 100% 100%;
+  background-attachment: fixed;
 }
 
 /* ============================================================================
@@ -80,7 +84,7 @@
 
 /* Khung hiện trường 2D Room Stage */
 .game-room-stage {
-  background: #FFFBEB;
+  background: #F8FAFC;
   border: 4px solid var(--game-border);
   border-radius: 24px;
   box-shadow: var(--game-shadow-lg);
@@ -88,35 +92,44 @@
   position: relative;
 }
 
-/* Băng rôn câu hỏi vàng đặc trưng Case Hunter */
+/* Header Game Bar Xanh Điện #1A1AFF */
+.game-header-bar {
+  background: linear-gradient(180deg, #2E2EFF 0%, #1A1AFF 100%);
+  border-bottom: 4px solid #000088;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(26, 26, 255, 0.25);
+}
+
+/* Băng rôn câu hỏi Xanh Chủ Đạo #1A1AFF */
+.game-blue-banner,
 .game-yellow-banner {
-  background: linear-gradient(180deg, #FFE082 0%, #FFCA28 100%);
-  border: 3.5px solid var(--game-border);
+  background: linear-gradient(180deg, #3333FF 0%, #1A1AFF 100%);
+  border: 3.5px solid #000088;
   border-radius: 18px;
-  color: var(--game-text-red);
+  color: #FFFFFF;
   font-family: var(--font-display), 'Nunito', sans-serif;
   font-weight: 800;
-  box-shadow: 0 4px 0 var(--game-shadow-color);
+  box-shadow: 0 5px 0 #000066;
   position: relative;
 }
 
-/* Băng rôn gỗ điều tra */
+/* Băng rôn tiêu đề nội dung bạc xanh */
 .game-wood-banner {
-  background: linear-gradient(180deg, #A0522D 0%, #8B4513 100%);
-  border: 3px solid var(--game-border);
+  background: linear-gradient(180deg, #2E2EFF 0%, #1A1AFF 100%);
+  border: 3px solid #000088;
   border-radius: 16px;
   color: #FFFFFF;
   font-family: var(--font-display), 'Nunito', sans-serif;
   font-weight: 800;
-  box-shadow: 0 4px 0 #331A05;
-  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 0 #000066;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.3);
 }
 
-/* Khay gỗ bằng chứng bên trái */
+/* Khay bên trái */
 .game-wooden-tray {
-  background: linear-gradient(180deg, #A0522D 0%, #6E3813 100%);
-  border: 3px solid var(--game-border);
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 4px 0 #331A05;
+  background: linear-gradient(180deg, #334155 0%, #1E293B 100%);
+  border-right: 3px solid var(--game-border);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.15), 0 4px 0 #0F172A;
 }
 
 /* ============================================================================
@@ -144,19 +157,24 @@
   box-shadow: 0 1px 0 var(--game-shadow-color) !important;
 }
 
-.btn-game-amber {
-  background: linear-gradient(180deg, #FFB300 0%, #F57C00 100%);
+/* Nút Bấm Xanh Điện #1A1AFF (Primary) */
+.btn-game-amber,
+.btn-game-primary {
+  background: linear-gradient(180deg, #3838FF 0%, #1A1AFF 100%);
   color: #FFFFFF;
-  box-shadow: var(--game-shadow-md);
+  border-color: #000088;
+  box-shadow: 0 6px 0 #000066;
 }
-.btn-game-amber:hover {
-  background: linear-gradient(180deg, #FFC107 0%, #FB8C00 100%);
+.btn-game-amber:hover,
+.btn-game-primary:hover {
+  background: linear-gradient(180deg, #4D4DFF 0%, #2929FF 100%);
 }
 
 .btn-game-green {
   background: linear-gradient(180deg, #10B981 0%, #059669 100%);
   color: #FFFFFF;
-  box-shadow: var(--game-shadow-md);
+  border-color: #064E3B;
+  box-shadow: 0 6px 0 #064E3B;
 }
 .btn-game-green:hover {
   background: linear-gradient(180deg, #34D399 0%, #047857 100%);
@@ -165,33 +183,33 @@
 .btn-game-red {
   background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
   color: #FFFFFF;
-  box-shadow: var(--game-shadow-md);
+  border-color: #7F1D1D;
+  box-shadow: 0 6px 0 #7F1D1D;
 }
 .btn-game-red:hover {
   background: linear-gradient(180deg, #F87171 0%, #B91C1C 100%);
 }
 
 .btn-game-blue {
-  background: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+  background: linear-gradient(180deg, #3B82F6 0%, #1A1AFF 100%);
   color: #FFFFFF;
-  box-shadow: var(--game-shadow-md);
-}
-.btn-game-blue:hover {
-  background: linear-gradient(180deg, #60A5FA 0%, #1D4ED8 100%);
+  border-color: #000088;
+  box-shadow: 0 6px 0 #000066;
 }
 
 .btn-game-white {
   background: #FFFFFF;
-  color: var(--game-text-brown);
+  color: #0F172A;
+  border-color: var(--game-border);
   box-shadow: var(--game-shadow-md);
   text-shadow: none;
 }
 .btn-game-white:hover {
-  background: #FFFDF9;
+  background: #F8FAFC;
 }
 
 /* ============================================================================
-   Game Answer Cards (Thẻ Đáp Án 3D)
+   Game Answer Cards (Thẻ Đáp Án 3D Tương Phản Cao)
    ============================================================================ */
 .game-answer-card {
   background: #FFFFFF;
@@ -205,14 +223,14 @@
 
 .game-answer-card:hover {
   transform: translateY(-2px);
-  background: #FFFDF5;
+  background: #F8FAFC;
   box-shadow: 0 6px 0 var(--game-shadow-color);
 }
 
 .game-answer-card.selected {
-  background: #FEF08A;
-  border-color: #EA580C;
-  box-shadow: 0 5px 0 #EA580C;
+  background: #EEF2FF;
+  border-color: #1A1AFF;
+  box-shadow: 0 5px 0 #1A1AFF;
 }
 
 .game-answer-card.correct {
@@ -235,7 +253,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 2.5px solid var(--game-border);
+  border: 2px solid var(--game-border);
   border-radius: 12px;
   font-family: var(--font-display), 'Nunito', sans-serif;
   font-weight: 800;
@@ -243,9 +261,15 @@
   box-shadow: 0 2px 0 var(--game-shadow-color);
 }
 
+.game-badge-blue {
+  background: #1A1AFF;
+  color: #FFFFFF;
+  border-color: #000088;
+}
+
 .game-badge-yellow {
   background: #FFCA28;
-  color: var(--game-text-brown);
+  color: #0F172A;
 }
 
 .game-badge-green {
@@ -259,6 +283,7 @@
 }
 
 .game-badge-wood {
-  background: #8B4513;
+  background: #1A1AFF;
   color: #FFFFFF;
+  border-color: #000088;
 }

@@ -26,7 +26,9 @@ export interface DbPlayerSession {
   clues_collected: number;
   stations_completed: number;
   is_completed: boolean;
+  start_time?: string | null;
   completion_time?: string | null;
+  duration_seconds?: number | null;
   confirmation_code?: string | null;
   created_at?: string;
   updated_at?: string;

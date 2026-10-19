@@ -4,12 +4,12 @@
 // ============================================================================
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Search, Eye, X, ChevronRight, CheckCircle, XCircle,
   Lightbulb, Star, Sparkles, MessageSquare, FileSearch, CreditCard,
-  Camera, Clock, ShieldCheck, AlertTriangle
+  Camera, Clock, ShieldCheck, AlertTriangle, Volume2, VolumeX, Trophy, Users
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
 import { Station } from '@/data/casesData';
@@ -33,6 +33,17 @@ export default function PlayingScreen() {
   const [showEvidence, setShowEvidence] = useState(false);
   const [selectedEvidenceIndex, setSelectedEvidenceIndex] = useState<number | null>(null);
   const [showWrongFeedback, setShowWrongFeedback] = useState(false);
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setIsSoundEnabled(sounds.isEnabled());
+  }, []);
+
+  const toggleSound = () => {
+    const next = sounds.toggle();
+    setIsSoundEnabled(next);
+    if (next) sounds.playClick();
+  };
 
   if (!caseData || !station || !progress) return null;
 
@@ -106,29 +117,49 @@ export default function PlayingScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-game-backdrop text-[#1E293B] pb-8">
-      {/* 1. Header Bar Băng Rôn Gỗ */}
-      <header className="sticky top-0 z-30 bg-[#FFCA28] border-b-4 border-[#4A2C11] px-4 py-2.5 shadow-md">
+    <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-8">
+      {/* 1. Header Bar Xanh Chủ Đạo #1A1AFF Chuẩn Thiết Kế */}
+      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-2.5 shadow-lg text-white">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={handleGoBack}
-              className="p-1.5 rounded-xl bg-white border-2 border-[#4A2C11] hover:bg-[#FEF08A] shadow-[0_3px_0_#4A2C11] active:translate-y-0.5 transition-all"
+              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white"
+              title="Quay lại lộ trình"
             >
-              <ArrowLeft className="w-5 h-5 text-[#3E2723] stroke-[3]" />
+              <ArrowLeft className="w-5 h-5 text-white stroke-[3]" />
             </button>
             <div>
-              <span className="game-badge game-badge-wood text-[10px] py-0">
-                TRẠM {state.currentStationIndex + 1}/5
-              </span>
-              <h1 className="font-display font-black text-xs sm:text-base text-[#3E2723] truncate max-w-[200px] sm:max-w-md">
+              <div className="flex items-center gap-2">
+                <span className="inline-block px-2 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-[10px] font-black uppercase tracking-wider">
+                  TRẠM {state.currentStationIndex + 1}/5
+                </span>
+                <span className="text-[11px] font-bold text-white/80 hidden sm:inline-block">
+                  {state.playerName} · Đội <strong>{state.teamCode}</strong>
+                </span>
+              </div>
+              <h1 className="font-display font-black text-xs sm:text-base text-white truncate max-w-[200px] sm:max-w-md drop-shadow-sm">
                 {station.title}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="game-badge game-badge-green text-xs font-black shadow-[0_2px_0_#064E3B]">
+            {/* Nút Âm Thanh */}
+            <button
+              onClick={toggleSound}
+              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
+              title={isSoundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
+            >
+              {isSoundEnabled ? (
+                <Volume2 className="w-4 h-4 text-white" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-white/70" />
+              )}
+            </button>
+
+            {/* Badge Điểm Thưởng Trạm */}
+            <div className="px-3 py-1 rounded-xl bg-[#FDE047] border-2 border-[#000088] text-[#0F172A] text-xs font-black shadow-[0_2px_0_#000088] flex items-center gap-1 font-display">
               ⭐ +{station.points} ĐIỂM
             </div>
           </div>
@@ -139,7 +170,7 @@ export default function PlayingScreen() {
       <div className="max-w-[1100px] mx-auto px-4 pt-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
-          {/* CỘT TRÁI (Lg: 7 cols): Khung Căn Phòng 2D + Khay Gỗ Trái + Băng Rôn Vàng Đáy */}
+          {/* CỘT TRÁI (Lg: 7 cols): Khung Căn Phòng 2D + Khay Gỗ Trái + Băng Rôn Xanh Đáy */}
           <div className="lg:col-span-7 space-y-3">
             {/* Khung Bao Căn Phòng Kết Hợp Khay Gỗ Bên Trái */}
             <div className="relative game-room-stage flex">
@@ -188,14 +219,14 @@ export default function PlayingScreen() {
               </div>
             </div>
 
-            {/* BĂNG RÔN CÂU HỎI VÀNG DƯỚI ĐÁY KHUNG HÌNH (Iconic Case Hunter Banner) */}
-            <div className="game-yellow-banner p-3.5 sm:p-4 text-center">
-              <div className="text-[11px] font-black uppercase tracking-wider text-[#8D230F] mb-1 flex items-center justify-center gap-1">
+            {/* BĂNG RÔN CÂU HỎI XANH CHỦ ĐẠO #1A1AFF DƯỚI ĐÁY KHUNG HÌNH */}
+            <div className="game-blue-banner p-3.5 sm:p-4 text-center">
+              <div className="text-[11px] font-black uppercase tracking-wider text-[#FDE047] mb-1 flex items-center justify-center gap-1">
                 <Star className="w-3.5 h-3.5 fill-current" />
                 {station.isMultipleChoice ? 'CHỌN NHIỀU ĐÁP ÁN ĐÚNG' : 'CHỌN 1 ĐÁP ÁN CHÍNH XÁC NHẤT'}
                 <Star className="w-3.5 h-3.5 fill-current" />
               </div>
-              <h2 className="text-base sm:text-lg font-black text-[#5D190A] leading-snug font-display">
+              <h2 className="text-base sm:text-lg font-black text-white leading-snug font-display drop-shadow-sm">
                 {station.question}
               </h2>
             </div>
@@ -238,16 +269,16 @@ export default function PlayingScreen() {
                   >
                     {/* Badge Chữ Cái A, B, C, D */}
                     <div
-                      className={`w-9 h-9 rounded-xl border-2 border-[#4A2C11] flex items-center justify-center font-display font-black text-sm flex-shrink-0 shadow-[0_2px_0_#4A2C11] ${
+                      className={`w-9 h-9 rounded-xl border-2 border-[#1E293B] flex items-center justify-center font-display font-black text-sm flex-shrink-0 shadow-[0_2px_0_#1E293B] ${
                         isSelected
-                          ? 'bg-[#FFCA28] text-[#5D190A]'
+                          ? 'bg-[#1A1AFF] text-white border-[#000088]'
                           : 'bg-[#F1F5F9] text-[#475569]'
                       }`}
                     >
                       {answer.id}
                     </div>
 
-                    <p className="flex-1 text-xs sm:text-sm font-bold text-[#1E293B] leading-snug">
+                    <p className="flex-1 text-xs sm:text-sm font-bold text-[#0F172A] leading-snug">
                       {answer.text}
                     </p>
 
@@ -261,11 +292,11 @@ export default function PlayingScreen() {
                         ) : null
                       ) : (
                         <div
-                          className={`w-5 h-5 rounded-md border-2 border-[#4A2C11] flex items-center justify-center ${
-                            isSelected ? 'bg-[#FFCA28]' : 'bg-white'
+                          className={`w-5 h-5 rounded-md border-2 border-[#1E293B] flex items-center justify-center ${
+                            isSelected ? 'bg-[#1A1AFF] border-[#000088]' : 'bg-white'
                           }`}
                         >
-                          {isSelected && <span className="font-black text-xs text-[#5D190A]">✓</span>}
+                          {isSelected && <span className="font-black text-xs text-white">✓</span>}
                         </div>
                       )}
                     </div>
@@ -291,15 +322,15 @@ export default function PlayingScreen() {
               </motion.div>
             )}
 
-            {/* NÚT BẤM CAM VÀNG 3D TACTILE */}
+            {/* NÚT BẤM XANH ĐIỆN #1A1AFF 3D TACTILE */}
             {!isAlreadyCompleted && !state.showResultDialog && (
               <button
                 onClick={handleCheckAnswer}
                 disabled={state.selectedAnswers.length === 0}
                 className={`w-full py-4 btn-game text-sm sm:text-base tracking-wide flex items-center justify-center gap-2 ${
                   state.selectedAnswers.length > 0
-                    ? 'btn-game-amber'
-                    : 'bg-[#E2E8F0] border-[#94A3B8] text-[#94A3B8] cursor-not-allowed shadow-none'
+                    ? 'btn-game-primary'
+                    : 'bg-[#CBD5E1] border-[#94A3B8] text-[#64748B] cursor-not-allowed shadow-none'
                 }`}
               >
                 <Search className="w-5 h-5 stroke-[3]" />

@@ -118,15 +118,15 @@ export default function SummaryScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-game-backdrop text-[#1E293B] pb-16">
-      {/* Header Bar */}
-      <header className="sticky top-0 z-30 bg-[#FFCA28] border-b-4 border-[#4A2C11] px-4 py-2.5 shadow-md">
+    <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-16">
+      {/* Header Bar Xanh Điện #1A1AFF */}
+      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-2.5 shadow-lg text-white">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="game-badge game-badge-wood text-xs">
+            <span className="px-2.5 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-xs font-black uppercase">
               VỤ ÁN #{caseData.caseNumber}
             </span>
-            <h1 className="font-display font-black text-sm uppercase text-[#3E2723] truncate">
+            <h1 className="font-display font-black text-sm uppercase text-white truncate drop-shadow-sm">
               HỒ SƠ PHÁ ÁN HOÀN TẤT
             </h1>
           </div>
@@ -135,7 +135,7 @@ export default function SummaryScreen() {
               sounds.playClick();
               dispatch({ type: 'COMPLETE_CASE' });
             }}
-            className="btn-game btn-game-white text-xs px-3 py-1.5"
+            className="p-1.5 px-3 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white font-display font-black text-xs"
           >
             Về Danh Sách Vụ
           </button>
@@ -186,31 +186,37 @@ export default function SummaryScreen() {
             <p className="text-xs text-[#64748B] font-semibold max-w-sm mt-0.5">{rankInfo.desc}</p>
           </div>
 
-          {/* 3 Metric Badges */}
-          <div className="grid grid-cols-3 gap-3 pt-3 border-t-2 border-[#4A2C11]/20">
-            <div className="p-3 bg-[#FEF3C7] border-2 border-[#4A2C11] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#B45309]">{totalScore}/100</span>
+          {/* 4 Metric Badges including Duration */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t-2 border-[#1E293B]/20">
+            <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
+              <span className="text-xl sm:text-2xl font-display font-black text-[#1A1AFF]">{totalScore}/100</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Tổng Điểm</span>
             </div>
-            <div className="p-3 bg-[#FEF3C7] border-2 border-[#4A2C11] rounded-xl text-center">
+            <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
               <span className="text-xl sm:text-2xl font-display font-black text-[#D97706]">{cluesCount}/5</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Manh Mối</span>
             </div>
-            <div className="p-3 bg-[#FEF3C7] border-2 border-[#4A2C11] rounded-xl text-center">
+            <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
               <span className="text-xl sm:text-2xl font-display font-black text-[#059669]">5/5</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Trạm Đã Qua</span>
+            </div>
+            <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
+              <span className="text-xl sm:text-2xl font-display font-black text-[#7C3AED]">
+                {progress.durationSeconds ? `${Math.floor(progress.durationSeconds / 60)}p ${progress.durationSeconds % 60}s` : 'Vừa xong'}
+              </span>
+              <span className="text-[10px] font-black uppercase text-[#64748B] block">Thời Gian Phá Án</span>
             </div>
           </div>
         </div>
 
         {/* BTC Confirmation Code Box */}
-        <div className="game-card p-5 bg-[#FFFBEB] border-[#FFCA28] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="game-card p-5 bg-[#F8FAFC] border-[#1E293B] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-black uppercase text-[#DC2626]">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-black uppercase text-[#1A1AFF]">
               <ShieldCheck className="w-4 h-4" />
               MÃ BÁO CÁO KẾT QUẢ CHO BAN TỔ CHỨC
             </div>
-            <div className="font-mono text-2xl font-black text-[#1E293B] tracking-widest mt-1">
+            <div className="font-mono text-2xl font-black text-[#0F172A] tracking-widest mt-1">
               {confirmationCode}
             </div>
             <p className="text-[11px] font-bold text-[#64748B]">
@@ -221,7 +227,7 @@ export default function SummaryScreen() {
           <div className="flex gap-2">
             <button
               onClick={handleCopyCode}
-              className="btn-game btn-game-amber text-xs px-4 py-2.5 flex items-center gap-1.5"
+              className="btn-game btn-game-primary text-xs px-4 py-2.5 flex items-center gap-1.5 shadow-[0_3px_0_#000066]"
             >
               {copiedCode ? (
                 <>
@@ -334,7 +340,7 @@ export default function SummaryScreen() {
               sounds.playClick();
               setShowLeaderboard(true);
             }}
-            className="flex-1 py-3.5 btn-game btn-game-amber text-sm tracking-wide flex items-center justify-center gap-2"
+            className="flex-1 py-3.5 btn-game btn-game-primary text-sm tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_0_#000066]"
           >
             <Trophy className="w-4 h-4" />
             BẢNG XẾP HẠNG

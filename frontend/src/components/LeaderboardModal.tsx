@@ -134,16 +134,18 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
           >
-            {/* Header */}
-            <div className="bg-[#FFCA28] border-b-4 border-[#4A2C11] p-4 text-[#3E2723] flex items-center justify-between">
+            {/* Header Xanh Điện #1A1AFF */}
+            <div className="bg-[#1A1AFF] border-b-4 border-[#000088] p-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <GameIcon type="trophy" size="lg" theme="amber" />
+                <div className="w-10 h-10 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
+                  <Trophy className="w-6 h-6 fill-current text-[#FDE047]" />
+                </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-display font-black uppercase tracking-tight flex items-center gap-2">
+                  <h2 className="text-lg sm:text-xl font-display font-black uppercase tracking-tight flex items-center gap-2 text-white">
                     BẢNG VÀNG THÁM TỬ SỐ
-                    <Sparkles className="w-4 h-4 text-[#8D230F]" />
+                    <Sparkles className="w-4 h-4 text-[#FDE047]" />
                   </h2>
-                  <p className="text-xs font-bold text-[#5D190A]">
+                  <p className="text-xs font-bold text-white/80">
                     Vinh danh các điều tra viên phá án xuất sắc nhất
                   </p>
                 </div>
@@ -155,25 +157,25 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                     sounds.playClick();
                     loadData();
                   }}
-                  className="p-1.5 bg-white rounded-lg border-2 border-[#4A2C11] hover:bg-[#FEF08A] shadow-[0_2px_0_#4A2C11]"
+                  className="p-1.5 bg-white/15 rounded-lg border-2 border-white/40 hover:bg-white/25 text-white shadow-[0_2px_0_#000088] transition-all"
                   title="Làm mới"
                 >
-                  <RefreshCw className={`w-4 h-4 text-[#3E2723] ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 text-white ${isLoading ? 'animate-spin' : ''}`} />
                 </button>
                 <button
                   onClick={() => {
                     sounds.playClick();
                     onClose();
                   }}
-                  className="p-1.5 bg-white rounded-lg border-2 border-[#4A2C11] hover:bg-[#FEE2E2] shadow-[0_2px_0_#4A2C11]"
+                  className="p-1.5 bg-white/15 rounded-lg border-2 border-white/40 hover:bg-white/25 text-white shadow-[0_2px_0_#000088] transition-all"
                 >
-                  <X className="w-4 h-4 text-[#3E2723]" />
+                  <X className="w-4 h-4 text-white" />
                 </button>
               </div>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 p-3 bg-[#FFFDF9] border-b-2 border-[#4A2C11] overflow-x-auto text-xs">
+            <div className="flex gap-2 p-3 bg-[#F8FAFC] border-b-2 border-[#1E293B] overflow-x-auto text-xs">
               <button
                 onClick={() => {
                   sounds.playSelect();
@@ -181,8 +183,8 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                 }}
                 className={`game-badge ${
                   activeTab === 'all'
-                    ? 'game-badge-yellow py-1 text-xs'
-                    : 'bg-white text-[#64748B] py-1'
+                    ? 'game-badge-blue py-1 text-xs'
+                    : 'bg-white text-[#64748B] py-1 border-[#CBD5E1]'
                 }`}
               >
                 🏆 Toàn bộ giải đấu
@@ -196,8 +198,8 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                   }}
                   className={`game-badge ${
                     activeTab === c.id
-                      ? 'game-badge-yellow py-1 text-xs'
-                      : 'bg-white text-[#64748B] py-1'
+                      ? 'game-badge-blue py-1 text-xs'
+                      : 'bg-white text-[#64748B] py-1 border-[#CBD5E1]'
                   }`}
                 >
                   Vụ #{c.caseNumber}
@@ -206,7 +208,7 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[#FFFBEB]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[#F8FAFC]">
               {isLoading ? (
                 <div className="py-16 text-center text-[#64748B] flex flex-col items-center gap-2">
                   <RefreshCw className="w-8 h-8 animate-spin text-[#D97706]" />

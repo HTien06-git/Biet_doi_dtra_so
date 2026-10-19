@@ -30,7 +30,9 @@ export interface PlayerSession {
   clues_collected: number;
   stations_completed: number;
   is_completed: boolean;
-  completion_time?: string;     // ISO string
+  start_time?: string;          // ISO string - Thời gian bắt đầu
+  completion_time?: string;     // ISO string - Thời gian hoàn thành
+  duration_seconds?: number;    // Tổng thời gian hoàn thành 5 trạm (tính theo giây)
   confirmation_code?: string;   // Mã xác nhận cho BTC
   created_at?: string;
   updated_at?: string;
