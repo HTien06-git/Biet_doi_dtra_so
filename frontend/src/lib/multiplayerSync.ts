@@ -478,6 +478,20 @@ class MultiplayerSyncManager {
     };
   }
 
+  // Clear all device registry manually
+  public clearAllDevices() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.currentDevice) {
+      this.currentDevice.isOnline = false;
+      this.currentDevice = null;
+    }
+    this.activeDevices.clear();
+    this.notifyDeviceSubscribers();
+  }
+
   // Listen to system reset and remote force logout events
   public onSystemReset(callback: () => void): () => void {
     this.systemResetListeners.add(callback);
@@ -489,8 +503,31 @@ class MultiplayerSyncManager {
   // Handle incoming system reset from Admin
   private handleIncomingSystemReset() {
     console.log('🚨 SYSTEM RESET RECEIVED - Clearing all local data and forcing logout!');
+    
+    // 1. Immediately terminate heartbeat timer so device stops sending periodic pings
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+
+    // 2. Clear current device reference
+    if (this.currentDevice) {
+      this.currentDevice.isOnline = false;
+      this.currentDevice = null;
+    }
+
+    // 3. Clear session and local storage
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('dts_device_id');
+      localStorage.removeItem('dts_game_state');
+      localStorage.removeItem('dts_player_sessions');
+    }
+
+    // 4. Wipe active devices registry
     this.activeDevices.clear();
     this.notifyDeviceSubscribers();
+
+    // 5. Notify all listeners
     this.systemResetListeners.forEach((cb) => {
       try {
         cb();

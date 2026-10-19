@@ -30,6 +30,13 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants' | 'telemetry'>('leaderboard');
   const [participantViewMode, setParticipantViewMode] = useState<'unique' | 'all'>('unique');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [lastResetTime, setLastResetTime] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('dts_admin_reset_at');
+      return saved ? parseInt(saved, 10) : 0;
+    }
+    return 0;
+  });
 
   // Live Multiplayer Telemetry State (50+ Device Concurrency)
   const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([]);
@@ -75,12 +82,7 @@ export default function AdminDashboardPage() {
     setIsLoading(true);
     try {
       const data = await getAllSessions();
-      setSessions((prev) => {
-        const merged = new Map<string, PlayerSession>();
-        prev.forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
-        (data || []).forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
-        return Array.from(merged.values());
-      });
+      setSessions(data || []);
     } catch (e: unknown) {
       console.error('Fetch sessions failed:', e);
     } finally {
@@ -211,6 +213,12 @@ export default function AdminDashboardPage() {
   // Clear data (Reset giải đấu, dọn sạch bảng dữ liệu về 0 & Tự động đăng xuất mọi thiết bị người chơi)
   const handleClearData = async () => {
     if (confirm('Đồng chí có chắc chắn muốn xóa TOÀN BỘ dữ liệu thi đấu và TỰ ĐỘNG ĐĂNG XUẤT trên mọi thiết bị người chơi để chuẩn bị vòng thi đấu mới?')) {
+      const now = Date.now();
+      setLastResetTime(now);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dts_admin_reset_at', now.toString());
+        localStorage.removeItem('dts_player_sessions');
+      }
       try {
         await fetch('/api/admin/sessions', {
           method: 'POST',
@@ -220,11 +228,9 @@ export default function AdminDashboardPage() {
       } catch (e) {
         console.warn('API clear error:', e);
       }
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('dts_player_sessions');
-      }
       // Gửi tín hiệu toàn mạng xóa sạch dữ liệu & ép đăng xuất toàn bộ thiết bị người chơi
       multiplayerSync.broadcastSystemReset();
+      multiplayerSync.clearAllDevices();
       setSessions([]);
       setConnectedDevices([]);
       setTelemetryEvents([]);
@@ -403,6 +409,21 @@ export default function AdminDashboardPage() {
       bestRecord,
     };
   }, [sessions, MOCK_TEAMS, MOCK_NAMES, isPlayerOnline]);
+
+  // Filtered Connected Devices (Loại bỏ các thiết bị đã ngắt kết nối hoặc tồn tại trước lần Reset gần nhất)
+  const filteredConnectedDevices = useMemo(() => {
+    return connectedDevices.filter((dev) => {
+      if (!dev.playerName || !dev.playerName.trim()) return false;
+      if (!dev.isOnline) return false;
+      if (!isSimulatingConcurrency && (MOCK_TEAMS.has(dev.teamCode) || MOCK_NAMES.has(dev.playerName))) {
+        return false;
+      }
+      if (lastResetTime > 0 && new Date(dev.lastActive).getTime() <= lastResetTime) {
+        return false;
+      }
+      return true;
+    });
+  }, [connectedDevices, isSimulatingConcurrency, MOCK_TEAMS, MOCK_NAMES, lastResetTime]);
 
   // Export to CSV UTF-8 with BOM
   const handleExportCSV = () => {
@@ -725,7 +746,7 @@ export default function AdminDashboardPage() {
               }`}
             >
               <Activity className="w-3.5 h-3.5 text-[#10B981] animate-pulse" />
-              📡 Giám Sát Real-Time ({connectedDevices.length})
+              📡 Giám Sát Real-Time ({filteredConnectedDevices.length})
             </button>
           </div>
 
@@ -1183,14 +1204,14 @@ export default function AdminDashboardPage() {
                   </span>
                 </div>
                 <span className="text-[11px] font-bold text-[#64748B]">
-                  Tổng {connectedDevices.length} thiết bị đang làm bài
+                  Tổng {filteredConnectedDevices.length} thiết bị đang làm bài
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {[1, 2, 3, 4, 5].map((stId) => {
-                  const count = connectedDevices.filter((d) => d.currentStationId === stId).length;
-                  const percent = connectedDevices.length > 0 ? Math.round((count / connectedDevices.length) * 100) : 0;
+                  const count = filteredConnectedDevices.filter((d) => d.currentStationId === stId).length;
+                  const percent = filteredConnectedDevices.length > 0 ? Math.round((count / filteredConnectedDevices.length) * 100) : 0;
                   return (
                     <div key={stId} className="p-3 rounded-xl bg-[#F8FAFC] border-2 border-[#CBD5E1] text-center">
                       <div className="text-[10px] font-black uppercase text-[#64748B]">TRẠM {stId}</div>
@@ -1217,15 +1238,34 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-[#1A1AFF]" />
                     <h3 className="font-display font-black text-xs uppercase text-[#0F172A]">
-                      DANH SÁCH THIẾT BỊ HOẠT ĐỘNG ({connectedDevices.length})
+                      DANH SÁCH THIẾT BỊ HOẠT ĐỘNG ({filteredConnectedDevices.length})
                     </h3>
                   </div>
-                  <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] text-[10px] font-black">
-                    Auto-sweep 45s
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        const now = Date.now();
+                        setLastResetTime(now);
+                        if (typeof window !== 'undefined') {
+                          sessionStorage.setItem('dts_admin_reset_at', now.toString());
+                        }
+                        multiplayerSync.clearAllDevices();
+                        setConnectedDevices([]);
+                        setTelemetryEvents([]);
+                        showNotification('success', 'Đã dọn sạch toàn bộ danh sách thiết bị real-time!');
+                      }}
+                      className="px-2 py-0.5 rounded-md bg-[#FEF2F2] border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] text-[10px] font-black cursor-pointer active:translate-y-0.5 transition-all"
+                      title="Làm trống danh sách thiết bị real-time"
+                    >
+                      Dọn danh sách
+                    </button>
+                    <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] text-[10px] font-black">
+                      Auto-sweep 45s
+                    </span>
+                  </div>
                 </div>
 
-                {connectedDevices.length === 0 ? (
+                {filteredConnectedDevices.length === 0 ? (
                   <div className="p-8 text-center text-xs font-bold text-[#64748B]">
                     Chưa có thiết bị nào kết nối. Mở game ở tab khác hoặc nhấn nút &quot;Mô Phỏng 55+ Thiết Bị&quot; ở trên.
                   </div>
@@ -1243,7 +1283,7 @@ export default function AdminDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
-                        {connectedDevices.map((dev) => (
+                        {filteredConnectedDevices.map((dev) => (
                           <tr key={dev.deviceId} className="hover:bg-[#F8FAFC]">
                             <td className="py-2.5 px-3 font-mono text-[10px] text-[#64748B] truncate max-w-[100px]">
                               {dev.deviceId}

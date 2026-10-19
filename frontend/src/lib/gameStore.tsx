@@ -529,11 +529,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('dts_game_state');
         localStorage.removeItem('dts_player_sessions');
       }
+      multiplayerSync.markDeviceOffline({
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+      });
       dispatch({ type: 'LOGOUT' });
       alert('⚠️ Ban Quản Trị đã dọn sạch toàn bộ dữ liệu giải đấu. Thiết bị của bạn đã được tự động đăng xuất để chuẩn bị cho lượt đấu mới!');
     });
     return () => unsub();
-  }, []);
+  }, [state.playerName, state.teamCode]);
 
   return (
     <GameContext.Provider
