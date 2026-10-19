@@ -1,0 +1,10 @@
+{
+  "name": "biet-doi-dtra-so",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run --prefix frontend dev",
+    "build": "npm run --prefix frontend build",
+    "start": "npm run --prefix frontend start"
+  }
+}
