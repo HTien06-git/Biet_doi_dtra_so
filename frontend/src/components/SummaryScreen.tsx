@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Award, ShieldCheck, Copy, Check, RotateCcw,
-  ChevronRight, Eye, Star, FileText, AlertOctagon, Download, X
+  ChevronRight, Eye, Star, FileText, AlertOctagon, Download, X, Home
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
@@ -120,27 +120,33 @@ export default function SummaryScreen() {
 
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-16">
-      {/* Header Bar Xanh Điện #1A1AFF */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-2.5 shadow-lg text-white">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-xs font-black uppercase">
-              VỤ ÁN #{caseData.caseNumber}
+      {/* Header Bar Xanh Điện #1A1AFF Chuẩn Thiết Kế */}
+      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
+          {/* Cụm trái: Huy hiệu Vụ án & Tiêu đề phá án */}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+            <span className="px-1.5 sm:px-2 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-[9px] sm:text-xs font-black uppercase tracking-wider whitespace-nowrap flex-shrink-0 shadow-xs">
+              VỤ #{caseData.caseNumber}
             </span>
-            <h1 className="font-display font-black text-sm uppercase text-white truncate drop-shadow-sm">
+            <h1 className="font-display font-black text-xs sm:text-sm uppercase text-white truncate drop-shadow-sm leading-tight">
               HỒ SƠ PHÁ ÁN HOÀN TẤT
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Cụm phải: Âm thanh & Nút Về Danh Sách */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <AudioController />
             <button
               onClick={() => {
                 sounds.playClick();
                 dispatch({ type: 'COMPLETE_CASE' });
               }}
-              className="p-1.5 px-3 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white font-display font-black text-xs"
+              className="p-1.5 px-2.5 sm:px-3.5 rounded-xl bg-[#FDE047] border-2 border-[#000088] hover:bg-[#FACC15] active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-[#0F172A] font-display font-black text-[11px] sm:text-xs flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 cursor-pointer"
+              title="Trở về danh sách vụ án"
             >
-              Về Danh Sách Vụ
+              <Home className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span className="hidden sm:inline">Về Danh Sách Vụ</span>
+              <span className="sm:hidden">Về Menu</span>
             </button>
           </div>
         </div>
