@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@import "../styles/case-hunter.css";
+
+:root {
+  /* Bright Sunny 2D Palette */
+  --color-bg-primary: #FDF6E3;
+  --color-bg-secondary: #FFFDF9;
+  --color-bg-card: #FFFFFF;
+  --color-border: #4A2C11;
+  --color-text-primary: #1E293B;
+  --color-text-secondary: #64748B;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans), 'Be Vietnam Pro', system-ui, sans-serif;
+  background-color: #FDF6E3;
+  color: #1E293B;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display), 'Nunito', sans-serif;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #FDF6E3;
+}
+::-webkit-scrollbar-thumb {
+  background: #D97706;
+  border-radius: 4px;
+  border: 2px solid #FDF6E3;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B45309;
+}

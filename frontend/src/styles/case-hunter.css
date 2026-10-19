@@ -1,0 +1,264 @@
+/* ============================================================================
+   CASE HUNTER 2D GAME STYLESHEET (BRIGHT & HIGH CONTRAST)
+   Tông màu kem ấm, viền nâu sẫm 3D, nút bấm tactile game rực rỡ, 100% chuẩn font
+   ============================================================================ */
+
+:root {
+  /* Warm Sunny Game Backdrop */
+  --game-bg-main: #FDF6E3;
+  --game-bg-cream: #FFFDF9;
+  --game-bg-warm: #FEF3C7;
+  --game-bg-card: #FFFFFF;
+
+  /* Game Borders & Shadows (Deep Rich Brown) */
+  --game-border: #4A2C11;
+  --game-border-dark: #331A05;
+  --game-shadow-color: #3E2723;
+  --game-shadow-sm: 0 3px 0 var(--game-shadow-color);
+  --game-shadow-md: 0 5px 0 var(--game-shadow-color);
+  --game-shadow-lg: 0 8px 0 var(--game-shadow-color);
+
+  /* Vivid 2D Game Palette */
+  --game-amber: #FFB300;
+  --game-amber-dark: #F57C00;
+  --game-yellow: #FFCA28;
+  --game-yellow-bright: #FDE047;
+  --game-red: #EF4444;
+  --game-red-dark: #DC2626;
+  --game-green: #10B981;
+  --game-green-dark: #059669;
+  --game-blue: #3B82F6;
+  --game-blue-dark: #2563EB;
+  --game-wood: #8B4513;
+  --game-wood-light: #A0522D;
+
+  /* Typography Colors */
+  --game-text-main: #1E293B;
+  --game-text-muted: #64748B;
+  --game-text-brown: #3E2723;
+  --game-text-red: #8D230F;
+}
+
+/* ============================================================================
+   Typography Helpers
+   ============================================================================ */
+.font-display {
+  font-family: var(--font-display), 'Nunito', sans-serif;
+}
+
+.font-sans {
+  font-family: var(--font-sans), 'Be Vietnam Pro', sans-serif;
+}
+
+/* ============================================================================
+   Backdrop Textures
+   ============================================================================ */
+.bg-game-backdrop {
+  background-color: #FDF6E3;
+  background-image: 
+    radial-gradient(#FDE68A 1.5px, transparent 1.5px),
+    linear-gradient(180deg, #FEF3C7 0%, #FDF6E3 100%);
+  background-size: 20px 20px, 100% 100%;
+}
+
+/* ============================================================================
+   Game Panels & Containers
+   ============================================================================ */
+.game-card {
+  background: #FFFFFF;
+  border: 3px solid var(--game-border);
+  border-radius: 20px;
+  box-shadow: var(--game-shadow-md);
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--game-shadow-lg);
+}
+
+/* Khung hiện trường 2D Room Stage */
+.game-room-stage {
+  background: #FFFBEB;
+  border: 4px solid var(--game-border);
+  border-radius: 24px;
+  box-shadow: var(--game-shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Băng rôn câu hỏi vàng đặc trưng Case Hunter */
+.game-yellow-banner {
+  background: linear-gradient(180deg, #FFE082 0%, #FFCA28 100%);
+  border: 3.5px solid var(--game-border);
+  border-radius: 18px;
+  color: var(--game-text-red);
+  font-family: var(--font-display), 'Nunito', sans-serif;
+  font-weight: 800;
+  box-shadow: 0 4px 0 var(--game-shadow-color);
+  position: relative;
+}
+
+/* Băng rôn gỗ điều tra */
+.game-wood-banner {
+  background: linear-gradient(180deg, #A0522D 0%, #8B4513 100%);
+  border: 3px solid var(--game-border);
+  border-radius: 16px;
+  color: #FFFFFF;
+  font-family: var(--font-display), 'Nunito', sans-serif;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #331A05;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* Khay gỗ bằng chứng bên trái */
+.game-wooden-tray {
+  background: linear-gradient(180deg, #A0522D 0%, #6E3813 100%);
+  border: 3px solid var(--game-border);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 4px 0 #331A05;
+}
+
+/* ============================================================================
+   3D Tactile Game Buttons
+   ============================================================================ */
+.btn-game {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display), 'Nunito', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 3px solid var(--game-border);
+  border-radius: 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  position: relative;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.btn-game:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--game-shadow-color) !important;
+}
+
+.btn-game-amber {
+  background: linear-gradient(180deg, #FFB300 0%, #F57C00 100%);
+  color: #FFFFFF;
+  box-shadow: var(--game-shadow-md);
+}
+.btn-game-amber:hover {
+  background: linear-gradient(180deg, #FFC107 0%, #FB8C00 100%);
+}
+
+.btn-game-green {
+  background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+  color: #FFFFFF;
+  box-shadow: var(--game-shadow-md);
+}
+.btn-game-green:hover {
+  background: linear-gradient(180deg, #34D399 0%, #047857 100%);
+}
+
+.btn-game-red {
+  background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+  color: #FFFFFF;
+  box-shadow: var(--game-shadow-md);
+}
+.btn-game-red:hover {
+  background: linear-gradient(180deg, #F87171 0%, #B91C1C 100%);
+}
+
+.btn-game-blue {
+  background: linear-gradient(180deg, #3B82F6 0%, #2563EB 100%);
+  color: #FFFFFF;
+  box-shadow: var(--game-shadow-md);
+}
+.btn-game-blue:hover {
+  background: linear-gradient(180deg, #60A5FA 0%, #1D4ED8 100%);
+}
+
+.btn-game-white {
+  background: #FFFFFF;
+  color: var(--game-text-brown);
+  box-shadow: var(--game-shadow-md);
+  text-shadow: none;
+}
+.btn-game-white:hover {
+  background: #FFFDF9;
+}
+
+/* ============================================================================
+   Game Answer Cards (Thẻ Đáp Án 3D)
+   ============================================================================ */
+.game-answer-card {
+  background: #FFFFFF;
+  border: 3px solid var(--game-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 0 var(--game-shadow-color);
+  color: var(--game-text-main);
+  transition: all 0.12s ease;
+  cursor: pointer;
+}
+
+.game-answer-card:hover {
+  transform: translateY(-2px);
+  background: #FFFDF5;
+  box-shadow: 0 6px 0 var(--game-shadow-color);
+}
+
+.game-answer-card.selected {
+  background: #FEF08A;
+  border-color: #EA580C;
+  box-shadow: 0 5px 0 #EA580C;
+}
+
+.game-answer-card.correct {
+  background: #D1FAE5;
+  border-color: #059669;
+  box-shadow: 0 5px 0 #059669;
+}
+
+.game-answer-card.wrong {
+  background: #FEE2E2;
+  border-color: #DC2626;
+  box-shadow: 0 5px 0 #DC2626;
+}
+
+/* ============================================================================
+   Game Badges & Stickers
+   ============================================================================ */
+.game-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 2.5px solid var(--game-border);
+  border-radius: 12px;
+  font-family: var(--font-display), 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  box-shadow: 0 2px 0 var(--game-shadow-color);
+}
+
+.game-badge-yellow {
+  background: #FFCA28;
+  color: var(--game-text-brown);
+}
+
+.game-badge-green {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.game-badge-red {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.game-badge-wood {
+  background: #8B4513;
+  color: #FFFFFF;
+}
