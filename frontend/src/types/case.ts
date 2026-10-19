@@ -53,6 +53,8 @@ export interface StationConfig {
 // Multiplayer Telemetry & Sync Types
 export type SyncEventType = 
   | 'DEVICE_ONLINE'
+  | 'USER_JOINED'
+  | 'CASE_STARTED'
   | 'STATION_ENTER'
   | 'CLUE_DISCOVERED'
   | 'ANSWER_ATTEMPT'

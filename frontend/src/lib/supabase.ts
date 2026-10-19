@@ -44,7 +44,7 @@ export interface PlayerSession {
 }
 
 // Global server-side in-memory session cache (persists during server lifetime)
-const getGlobalServerSessions = (): Map<string, PlayerSession> => {
+export const getGlobalServerSessions = (): Map<string, PlayerSession> => {
   const g = globalThis as any;
   if (!g.__DTS_SERVER_SESSIONS__) {
     g.__DTS_SERVER_SESSIONS__ = new Map<string, PlayerSession>();

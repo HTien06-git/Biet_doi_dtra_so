@@ -11,6 +11,7 @@ import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
 import { DetectiveIllustration } from '@/assets/illustrations';
 import GameIcon from './GameIcon';
+import { multiplayerSync } from '@/lib/multiplayerSync';
 
 export default function WelcomeScreen() {
   const { dispatch } = useGame();
@@ -46,6 +47,17 @@ export default function WelcomeScreen() {
     sounds.playClick();
     setError('');
     setIsLoading(true);
+
+    // Broadcast live event to Admin immediately
+    multiplayerSync.broadcastEvent({
+      eventType: 'USER_JOINED',
+      playerName: playerName.trim(),
+      teamCode: teamCode.trim(),
+      caseId: 0,
+      stationId: 0,
+      totalScore: 0,
+    });
+
     setTimeout(() => {
       dispatch({
         type: 'SET_PLAYER',

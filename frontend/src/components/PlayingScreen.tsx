@@ -26,6 +26,7 @@ export default function PlayingScreen() {
     getCurrentCase,
     getCurrentStation,
     getCurrentCaseProgress,
+    saveProgress,
   } = useGame();
 
   const caseData = getCurrentCase();
@@ -36,6 +37,7 @@ export default function PlayingScreen() {
   const [selectedEvidenceIndex, setSelectedEvidenceIndex] = useState<number | null>(null);
   const [showWrongFeedback, setShowWrongFeedback] = useState(false);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [wrongCountdown, setWrongCountdown] = useState<number>(3);
 
   useEffect(() => {
     setIsSoundEnabled(sounds.isEnabled());
@@ -93,6 +95,41 @@ export default function PlayingScreen() {
     }
   };
 
+  const handleNextStation = () => {
+    sounds.playClick();
+    setShowWrongFeedback(false);
+    multiplayerSync.broadcastEvent({
+      eventType: 'STATION_COMPLETED',
+      playerName: state.playerName,
+      teamCode: state.teamCode,
+      caseId: caseData.id,
+      stationId: state.currentStationIndex + 1,
+      totalScore: currentTotalScore,
+    });
+    dispatch({ type: 'NEXT_STATION' });
+    setTimeout(() => {
+      saveProgress();
+    }, 120);
+  };
+
+  // Tự động chuyển câu sau 3 giây khi trả lời sai
+  useEffect(() => {
+    if (state.showResultDialog && state.resultDialogType === 'wrong') {
+      setWrongCountdown(3);
+      const timer = setInterval(() => {
+        setWrongCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleNextStation();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [state.showResultDialog, state.resultDialogType, state.currentStationIndex]);
+
   const handleCheckAnswer = () => {
     if (state.selectedAnswers.length === 0) return;
 
@@ -128,7 +165,9 @@ export default function PlayingScreen() {
           totalScore: updatedScore,
         });
       }
-    } else if (state.gameMode === 'strict') {
+      setTimeout(() => saveProgress(), 100);
+    } else {
+      // TRẢ LỜI SAI: Tự động qua câu khác, coi như câu đó KHÔNG hoàn thành (0đ, không manh mối)
       sounds.playWrong();
       multiplayerSync.broadcastEvent({
         eventType: 'ANSWER_ATTEMPT',
@@ -139,38 +178,24 @@ export default function PlayingScreen() {
         scoreDelta: 0,
         totalScore: currentTotalScore,
       });
+
       dispatch({
-        type: 'ANSWER_WRONG_STRICT',
+        type: 'ANSWER_WRONG_SKIP',
         payload: { stationIndex: state.currentStationIndex },
       });
-    } else {
-      sounds.playWrong();
-      multiplayerSync.broadcastEvent({
-        eventType: 'ANSWER_ATTEMPT',
-        playerName: state.playerName,
-        teamCode: state.teamCode,
-        caseId: caseData.id,
-        stationId: state.currentStationIndex + 1,
-        scoreDelta: 0,
-        totalScore: currentTotalScore,
-      });
-      setShowWrongFeedback(true);
-      dispatch({ type: 'RESET_STATION_UI' });
-    }
-  };
 
-  const handleNextStation = () => {
-    sounds.playClick();
-    setShowWrongFeedback(false);
-    multiplayerSync.broadcastEvent({
-      eventType: 'STATION_COMPLETED',
-      playerName: state.playerName,
-      teamCode: state.teamCode,
-      caseId: caseData.id,
-      stationId: state.currentStationIndex + 1,
-      totalScore: currentTotalScore,
-    });
-    dispatch({ type: 'NEXT_STATION' });
+      if (isLastStation) {
+        multiplayerSync.broadcastEvent({
+          eventType: 'CASE_FINISHED',
+          playerName: state.playerName,
+          teamCode: state.teamCode,
+          caseId: caseData.id,
+          stationId: state.currentStationIndex + 1,
+          totalScore: currentTotalScore,
+        });
+      }
+      setTimeout(() => saveProgress(), 100);
+    }
   };
 
   const handleGoBack = () => {
@@ -478,20 +503,37 @@ export default function PlayingScreen() {
                 </div>
               ) : (
                 <div className="text-center space-y-3">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-[#FEE2E2] border-3 border-[#4A2C11] flex items-center justify-center text-3xl shadow-[0_4px_0_#4A2C11]">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-[#FEE2E2] border-3 border-[#DC2626] flex items-center justify-center text-3xl shadow-[0_4px_0_#991B1B]">
                     ❌
                   </div>
-                  <h3 className="text-xl font-display font-black uppercase text-[#DC2626]">
-                    CHƯA CHÍNH XÁC
-                  </h3>
-                  <p className="text-xs font-semibold text-[#64748B]">
-                    Chế độ thi đấu: Không được cộng điểm tại trạm này (0/{station.points}đ).
-                  </p>
+                  <div>
+                    <h3 className="text-xl font-display font-black uppercase text-[#DC2626]">
+                      CHƯA CHÍNH XÁC!
+                    </h3>
+                    <p className="text-xs font-black uppercase text-[#991B1B] mt-0.5">
+                      Coi như không hoàn thành câu này (+0đ · Không có manh mối)
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-[#FEF2F2] border-2 border-[#F87171] rounded-xl text-left text-xs font-semibold leading-relaxed text-[#1E293B]">
+                    <p className="text-[#DC2626] font-black uppercase mb-1 flex items-center gap-1 font-display">
+                      <Lightbulb className="w-3.5 h-3.5" /> Giải thích đáp án chính xác:
+                    </p>
+                    {station.correctExplanation}
+                  </div>
+
+                  <div className="p-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-lg text-xs font-bold text-[#E11D48] flex items-center justify-center gap-2">
+                    <Clock className="w-4 h-4 animate-spin text-[#E11D48]" />
+                    <span>
+                      Tự động chuyển câu tiếp theo sau <strong className="font-mono text-sm px-1.5 py-0.5 bg-white rounded border border-[#FDA4AF]">{wrongCountdown}s</strong>...
+                    </span>
+                  </div>
+
                   <button
                     onClick={handleNextStation}
-                    className="w-full py-3.5 btn-game btn-game-red text-sm tracking-wider flex items-center justify-center gap-2"
+                    className="w-full py-3.5 btn-game btn-game-red text-sm tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_0_#991B1B]"
                   >
-                    {isLastStation ? 'XEM KẾT QUẢ VỤ ÁN' : 'TIẾP TỤC ĐIỀU TRA'}
+                    {isLastStation ? 'XEM BÁO CÁO KẾT QUẢ VỤ ÁN' : 'CHUYỂN CÂU TIẾP THEO NGAY'}
                     <ChevronRight className="w-4 h-4 stroke-[3]" />
                   </button>
                 </div>

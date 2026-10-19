@@ -106,6 +106,7 @@ type GameAction =
   | { type: 'CHECK_ANSWER' }
   | { type: 'ANSWER_CORRECT'; payload: { stationIndex: number; points: number } }
   | { type: 'ANSWER_WRONG_STRICT'; payload: { stationIndex: number } }
+  | { type: 'ANSWER_WRONG_SKIP'; payload: { stationIndex: number } }
   | { type: 'NEXT_STATION' }
   | { type: 'COMPLETE_CASE' }
   | { type: 'TOGGLE_EVIDENCE' }
@@ -254,6 +255,30 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         caseProgress: cp2,
         showResultDialog: true,
         resultDialogType: 'wrong',
+      };
+    }
+
+    case 'ANSWER_WRONG_SKIP': {
+      if (!state.currentCaseId) return state;
+      const cpSkip = { ...state.caseProgress };
+      const casePSkip = { ...cpSkip[state.currentCaseId] };
+      const stationsSkip = [...casePSkip.stations];
+      stationsSkip[action.payload.stationIndex] = {
+        ...stationsSkip[action.payload.stationIndex],
+        completed: false, // Marked as NOT completed
+        score: 0,         // 0 points
+        clueUnlocked: false,
+        attempts: stationsSkip[action.payload.stationIndex].attempts + 1,
+      };
+      casePSkip.stations = stationsSkip;
+      casePSkip.stationsCompleted = stationsSkip.filter((s) => s.completed).length;
+      cpSkip[state.currentCaseId] = casePSkip;
+      return {
+        ...state,
+        caseProgress: cpSkip,
+        showResultDialog: true,
+        resultDialogType: 'wrong',
+        isAnswerChecked: true,
       };
     }
 
@@ -415,7 +440,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const saveProgress = useCallback(async () => {
     if (!state.isLoggedIn) return;
-    const promises = Object.values(state.caseProgress).map((cp) => {
+    const activeCases = Object.values(state.caseProgress).filter(
+      (cp) => cp.startTime || cp.totalScore > 0 || cp.stationsCompleted > 0 || cp.caseId === state.currentCaseId
+    );
+    const promises = activeCases.map((cp) => {
       const session: PlayerSession = {
         player_name: state.playerName,
         team_code: state.teamCode,
@@ -432,7 +460,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return savePlayerSession(session);
     });
     await Promise.all(promises);
-  }, [state.isLoggedIn, state.playerName, state.teamCode, state.caseProgress]);
+  }, [state.isLoggedIn, state.playerName, state.teamCode, state.caseProgress, state.currentCaseId]);
 
   // Load progress from DB on login
   useEffect(() => {

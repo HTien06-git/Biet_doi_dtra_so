@@ -152,102 +152,23 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Seed sample demo teams for test / preview
-  const handleSeedDemoData = async () => {
-    const demoTeams: PlayerSession[] = [
-      {
-        player_name: 'Nguyễn Văn An',
-        team_code: 'CYBER-ALPHA',
-        case_id: 1,
-        station_scores: [15, 15, 20, 25, 25],
-        total_score: 100,
-        clues_collected: 5,
-        stations_completed: 5,
-        is_completed: true,
-        start_time: new Date(Date.now() - 3 * 3600000).toISOString(),
-        completion_time: new Date(Date.now() - 3 * 3600000 + 132000).toISOString(), // 2m 12s
-        duration_seconds: 132,
-        confirmation_code: 'DTS-A19B3X',
-        updated_at: new Date(Date.now() - 3 * 3600000 + 132000).toISOString(),
-      },
-      {
-        player_name: 'Trần Thị Mai',
-        team_code: 'SEC-SHIELD',
-        case_id: 1,
-        station_scores: [15, 15, 20, 25, 25],
-        total_score: 100,
-        clues_collected: 5,
-        stations_completed: 5,
-        is_completed: true,
-        start_time: new Date(Date.now() - 2 * 3600000).toISOString(),
-        completion_time: new Date(Date.now() - 2 * 3600000 + 185000).toISOString(), // 3m 05s
-        duration_seconds: 185,
-        confirmation_code: 'DTS-M48K2P',
-        updated_at: new Date(Date.now() - 2 * 3600000 + 185000).toISOString(),
-      },
-      {
-        player_name: 'Lê Hoàng Minh',
-        team_code: 'FIREWALL-07',
-        case_id: 1,
-        station_scores: [15, 15, 20, 0, 25],
-        total_score: 75,
-        clues_collected: 4,
-        stations_completed: 5,
-        is_completed: true,
-        start_time: new Date(Date.now() - 1 * 3600000).toISOString(),
-        completion_time: new Date(Date.now() - 1 * 3600000 + 248000).toISOString(), // 4m 08s
-        duration_seconds: 248,
-        confirmation_code: 'DTS-F92L8W',
-        updated_at: new Date(Date.now() - 1 * 3600000 + 248000).toISOString(),
-      },
-      {
-        player_name: 'Phạm Quốc Hùng',
-        team_code: 'DEFENDER-X',
-        case_id: 1,
-        station_scores: [15, 15, 20, 25, 25],
-        total_score: 100,
-        clues_collected: 5,
-        stations_completed: 5,
-        is_completed: true,
-        start_time: new Date(Date.now() - 45 * 60000).toISOString(),
-        completion_time: new Date(Date.now() - 45 * 60000 + 310000).toISOString(), // 5m 10s
-        duration_seconds: 310,
-        confirmation_code: 'DTS-D33V1K',
-        updated_at: new Date(Date.now() - 45 * 60000 + 310000).toISOString(),
-      },
-      {
-        player_name: 'Hoàng Thùy Linh',
-        team_code: 'ZERO-TRUST',
-        case_id: 1,
-        station_scores: [15, 15, 20, 0, 0],
-        total_score: 50,
-        clues_collected: 3,
-        stations_completed: 3,
-        is_completed: false,
-        start_time: new Date(Date.now() - 15 * 60000).toISOString(),
-        updated_at: new Date(Date.now() - 5 * 60000).toISOString(),
-      },
-    ];
-
-    try {
-      for (const s of demoTeams) {
-        await savePlayerSession(s);
+  // Clear data (Reset giải đấu, dọn sạch bảng dữ liệu về 0)
+  const handleClearData = async () => {
+    if (confirm('Đồng chí có chắc chắn muốn xóa TOÀN BỘ dữ liệu thi đấu để chuẩn bị vòng thi đấu mới?')) {
+      try {
+        await fetch('/api/admin/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'clear' }),
+        });
+      } catch (e) {
+        console.warn('API clear error:', e);
       }
-      await fetchSessions();
-      showNotification('success', 'Đã nạp 5 đội thi đấu mẫu thành công!');
-    } catch (e: any) {
-      showNotification('error', 'Lỗi nạp dữ liệu mẫu');
-    }
-  };
-
-  // Clear data
-  const handleClearData = () => {
-    if (confirm('Đồng chí có chắc chắn muốn xóa toàn bộ dữ liệu người chơi để chuẩn bị vòng thi đấu mới?')) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('dts_player_sessions');
       }
       setSessions([]);
-      showNotification('success', 'Đã dọn sạch dữ liệu thi đấu!');
+      showNotification('success', 'Đã dọn sạch toàn bộ dữ liệu. Bảng thi đấu đã về 0!');
     }
   };
 
@@ -279,27 +200,39 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Filtered Sessions
+  // Mock filter sets
+  const MOCK_TEAMS = useMemo(() => new Set(['CYBER-ALPHA', 'SEC-SHIELD', 'FIREWALL-07', 'DEFENDER-X', 'ZERO-TRUST']), []);
+  const MOCK_NAMES = useMemo(() => new Set(['Nguyễn Văn An', 'Trần Thị Mai', 'Lê Hoàng Minh', 'Phạm Quốc Hùng', 'Hoàng Thùy Linh']), []);
+
+  // Filtered Sessions (CHỈ LẤY DỮ LIỆU THẬT)
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
-      // Search
+      // 1. Loại bỏ dữ liệu ảo/demo
+      if (MOCK_TEAMS.has(s.team_code) || MOCK_NAMES.has(s.player_name)) return false;
+
+      // 2. Loại bỏ các phiên trống chưa bắt đầu (ghost sessions)
+      if (!s.start_time && (s.total_score || 0) === 0 && (s.stations_completed || 0) === 0 && !s.is_completed) {
+        return false;
+      }
+
+      // 3. Search
       const matchQuery =
         searchQuery === '' ||
         s.player_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.team_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (s.confirmation_code && s.confirmation_code.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // Case Filter
+      // 4. Case Filter
       const matchCase = selectedCaseId === 'all' || s.case_id.toString() === selectedCaseId;
 
-      // Status Filter
+      // 5. Status Filter
       let matchStatus = true;
       if (filterStatus === 'completed') matchStatus = s.is_completed === true;
       if (filterStatus === 'in_progress') matchStatus = s.is_completed !== true;
 
       return matchQuery && matchCase && matchStatus;
     });
-  }, [sessions, searchQuery, selectedCaseId, filterStatus]);
+  }, [sessions, searchQuery, selectedCaseId, filterStatus, MOCK_TEAMS, MOCK_NAMES]);
 
   // 5-station challenge Leaderboard (Fastest to Slowest)
   const leaderboard5Stations = useMemo(() => {
@@ -315,14 +248,21 @@ export default function AdminDashboardPage() {
     });
   }, [filteredSessions]);
 
-  // Participant Statistics
+  // Participant Statistics (Chỉ tính dữ liệu người chơi thật)
   const stats = useMemo(() => {
-    const totalParticipants = sessions.length;
-    const uniqueTeams = new Set(sessions.map((s) => s.team_code)).size;
-    const completedCount = sessions.filter((s) => s.is_completed || s.stations_completed === 5).length;
+    const realSessions = sessions.filter((s) => {
+      if (MOCK_TEAMS.has(s.team_code) || MOCK_NAMES.has(s.player_name)) return false;
+      if (!s.start_time && (s.total_score || 0) === 0 && (s.stations_completed || 0) === 0 && !s.is_completed) return false;
+      return true;
+    });
+
+    const totalParticipants = realSessions.length;
+    const uniqueTeams = new Set(realSessions.map((s) => s.team_code)).size;
+    const completedCount = realSessions.filter((s) => s.is_completed || s.stations_completed === 5).length;
+    const activeCount = realSessions.filter((s) => !s.is_completed && (s.stations_completed || 0) < 5).length;
     
     // Find best duration record
-    const completedWithDuration = sessions.filter(
+    const completedWithDuration = realSessions.filter(
       (s) => (s.is_completed || s.stations_completed === 5) && s.duration_seconds && s.duration_seconds > 0
     );
     let bestRecord = 'Chưa có';
@@ -337,9 +277,10 @@ export default function AdminDashboardPage() {
       totalParticipants,
       uniqueTeams,
       completedCount,
+      activeCount,
       bestRecord,
     };
-  }, [sessions]);
+  }, [sessions, MOCK_TEAMS, MOCK_NAMES]);
 
   // Export to CSV UTF-8 with BOM
   const handleExportCSV = () => {
@@ -570,9 +511,17 @@ export default function AdminDashboardPage() {
                 <Users className="w-4 h-4" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-display font-black text-[#1A1AFF]">
-              {stats.totalParticipants}
-            </p>
+            <div className="flex items-baseline gap-2">
+              <p className="text-2xl sm:text-3xl font-display font-black text-[#1A1AFF]">
+                {stats.totalParticipants}
+              </p>
+              {stats.activeCount > 0 && (
+                <span className="text-xs font-bold text-[#D97706] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping inline-block" />
+                  {stats.activeCount} đang chơi
+                </span>
+              )}
+            </div>
             <p className="text-[10px] text-[#64748B] font-bold mt-0.5">Lượt đăng ký phiên thi đấu</p>
           </div>
 
@@ -681,23 +630,14 @@ export default function AdminDashboardPage() {
               ))}
             </select>
 
-            {/* Seed / Demo Button for BTC */}
-            <button
-              onClick={handleSeedDemoData}
-              className="p-1.5 px-2.5 rounded-xl bg-[#F8FAFC] border-2 border-[#CBD5E1] hover:bg-[#F1F5F9] text-xs font-bold text-[#475569] flex items-center gap-1"
-              title="Thêm dữ liệu mẫu thử nghiệm giải đấu"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[#1A1AFF]" />
-              <span className="hidden sm:inline">Dữ Liệu Mẫu</span>
-            </button>
-
-            {/* Reset data */}
+            {/* Reset / Clear Data Button */}
             <button
               onClick={handleClearData}
-              className="p-1.5 rounded-xl bg-[#FEF2F2] border-2 border-[#FECACA] hover:bg-[#FEE2E2] text-xs font-bold text-[#DC2626]"
-              title="Xóa sạch dữ liệu thi đấu"
+              className="p-1.5 px-3 rounded-xl bg-[#FEF2F2] border-2 border-[#FECACA] hover:bg-[#FEE2E2] text-xs font-bold text-[#DC2626] flex items-center gap-1.5 shadow-sm active:translate-y-0.5 transition-all"
+              title="Xóa toàn bộ dữ liệu để chuẩn bị vòng thi đấu mới"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Dọn Sạch Bảng (Reset)</span>
             </button>
           </div>
         </div>
@@ -732,14 +672,8 @@ export default function AdminDashboardPage() {
                   Chưa có đội nào hoàn thành 5 trạm thử thách
                 </h3>
                 <p className="text-xs font-semibold text-[#94A3B8] max-w-sm mx-auto">
-                  Hãy mời người chơi tham gia hoặc bấm nút &quot;Dữ Liệu Mẫu&quot; ở thanh công cụ phía trên để xem thử nghiệm bảng xếp hạng.
+                  Hệ thống đang hoạt động và đồng bộ trực tuyến. Bảng vàng sẽ tự động nhảy số ngay khi có đội chơi hoàn tất phá án trên bất kỳ thiết bị nào!
                 </p>
-                <button
-                  onClick={handleSeedDemoData}
-                  className="btn-game btn-game-primary text-xs px-4 py-2 mt-2"
-                >
-                  Nạp 5 Đội Mẫu Thử Nghiệm
-                </button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -900,12 +834,13 @@ export default function AdminDashboardPage() {
                         </td>
                         <td className="py-3 px-3 text-center">
                           {session.is_completed || session.stations_completed === 5 ? (
-                            <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[10px] font-black uppercase">
-                              ✓ ĐÃ HOÀN THÀNH
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[10px] font-black uppercase">
+                              ✓ ĐÃ PHÁ ÁN ({session.total_score}đ)
                             </span>
                           ) : (
-                            <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#FEF3C7] border border-[#D97706] text-[#92400E] text-[10px] font-black uppercase animate-pulse">
-                              ⏳ ĐANG THI ĐẤU
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] border border-[#D97706] text-[#92400E] text-[10px] font-black uppercase shadow-sm">
+                              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping inline-block" />
+                              ĐANG THI ĐẤU (Trạm {Math.min(5, (session.stations_completed || 0) + 1)}/5)
                             </span>
                           )}
                         </td>

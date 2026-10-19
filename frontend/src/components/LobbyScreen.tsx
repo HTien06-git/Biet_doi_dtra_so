@@ -16,6 +16,8 @@ import { sounds } from '@/lib/sounds';
 import GameIcon, { GameIconType } from './GameIcon';
 import LeaderboardModal from './LeaderboardModal';
 import AudioController from '@/components/ui/AudioController';
+import { savePlayerSession, PlayerSession } from '@/lib/supabase';
+import { multiplayerSync } from '@/lib/multiplayerSync';
 
 export default function LobbyScreen() {
   const { state, dispatch } = useGame();
@@ -23,6 +25,31 @@ export default function LobbyScreen() {
 
   const handleSelectCase = (caseId: number) => {
     sounds.playClick();
+    
+    // Broadcast active in-progress session to Admin immediately
+    const initialSession: PlayerSession = {
+      player_name: state.playerName,
+      team_code: state.teamCode,
+      case_id: caseId,
+      station_scores: [0, 0, 0, 0, 0],
+      total_score: 0,
+      clues_collected: 0,
+      stations_completed: 0,
+      is_completed: false,
+      start_time: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    savePlayerSession(initialSession);
+
+    multiplayerSync.broadcastEvent({
+      eventType: 'CASE_STARTED',
+      playerName: state.playerName,
+      teamCode: state.teamCode,
+      caseId: caseId,
+      stationId: 1,
+      totalScore: 0,
+    });
+
     dispatch({ type: 'SELECT_CASE', payload: caseId });
   };
 
