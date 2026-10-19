@@ -5,7 +5,7 @@
 // ============================================================================
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ShieldAlert, FileText, QrCode, MessageSquare, PhoneCall,
@@ -26,6 +26,17 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
   const config: StationConfig = getStationConfig(caseId, stationIndex);
   const [selectedClue, setSelectedClue] = useState<ClueItem | null>(null);
 
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedClue(null);
+    };
+    if (selectedClue) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedClue]);
+
   const handleInspectClue = (clue: ClueItem) => {
     sounds.playMagnify();
     setSelectedClue(clue);
@@ -36,65 +47,66 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
 
   const getClueIcon = (type: ClueItem['iconType']) => {
     switch (type) {
-      case 'sos': return <ShieldAlert className="w-5 h-5 text-[#EF4444]" />;
-      case 'pdf': return <FileText className="w-5 h-5 text-[#DC2626]" />;
-      case 'qr': return <QrCode className="w-5 h-5 text-[#1A1AFF]" />;
-      case 'chat_log': return <MessageSquare className="w-5 h-5 text-[#2563EB]" />;
-      case 'call_log': return <PhoneCall className="w-5 h-5 text-[#D97706]" />;
-      default: return <FileText className="w-5 h-5 text-[#059669]" />;
+      case 'sos': return <ShieldAlert className="w-4 h-4 text-[#EF4444]" />;
+      case 'pdf': return <FileText className="w-4 h-4 text-[#DC2626]" />;
+      case 'qr': return <QrCode className="w-4 h-4 text-[#1A1AFF]" />;
+      case 'chat_log': return <MessageSquare className="w-4 h-4 text-[#2563EB]" />;
+      case 'call_log': return <PhoneCall className="w-4 h-4 text-[#D97706]" />;
+      default: return <FileText className="w-4 h-4 text-[#059669]" />;
     }
   };
 
   return (
-    <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[460px] rounded-2xl overflow-hidden border-4 border-[#1E293B] shadow-[0_8px_0_#1E293B] bg-[#F8FAFC] select-none">
+    <div className="relative w-full h-full min-h-[300px] sm:min-h-[360px] select-none overflow-hidden">
       
       {/* 1. DYNAMIC SCENE BACKGROUND THEMES */}
       <SceneBackground theme={config.backgroundTheme} />
 
       {/* 2. DYNAMIC CHARACTER SPRITE & EXPRESSIONS */}
-      <div className="absolute left-6 sm:left-12 bottom-0 z-20 pointer-events-none">
+      <div className="absolute left-3 sm:left-6 bottom-0 z-20 pointer-events-none">
         <DynamicCharacterSprite
           name={config.character.name}
           expression={config.character.expression}
         />
       </div>
 
-      {/* 3. DYNAMIC COMIC SPEECH BUBBLE */}
+      {/* 3. DYNAMIC COMIC SPEECH BUBBLE (Separated cleanly on top-left) */}
       <motion.div
         key={`${config.caseId}_${config.stationId}`}
         initial={{ scale: 0.85, opacity: 0, y: 15 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 15 }}
-        className="absolute left-28 sm:left-48 top-4 sm:top-6 z-30 max-w-[220px] sm:max-w-xs"
+        className="absolute left-16 sm:left-24 top-2 sm:top-3 z-25 max-w-[180px] sm:max-w-[220px] md:max-w-[250px]"
       >
-        <div className="relative bg-white border-3 border-[#1E293B] rounded-2xl p-3 sm:p-3.5 shadow-[0_5px_0_#1E293B]">
+        <div className="relative bg-white border-3 border-[#1E293B] rounded-2xl p-2.5 sm:p-3 shadow-[0_4px_0_#1E293B]">
           {/* Dialogue Tag */}
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="inline-block px-2 py-0.2 rounded-md bg-[#1A1AFF] text-white font-display font-black text-[9px] uppercase tracking-wider">
+            <span className="inline-block px-1.5 py-0.2 rounded-md bg-[#1A1AFF] text-white font-display font-black text-[8px] sm:text-[9px] uppercase tracking-wider">
               {config.character.name}
             </span>
             {config.character.roleTitle && (
-              <span className="text-[9px] font-bold text-[#64748B] truncate">
+              <span className="text-[8px] sm:text-[9px] font-bold text-[#64748B] truncate">
                 · {config.character.roleTitle}
               </span>
             )}
           </div>
 
-          <p className="text-xs sm:text-[13px] font-bold text-[#0F172A] leading-snug">
+          <p className="text-[11px] sm:text-xs font-bold text-[#0F172A] leading-snug">
             {config.character.dialogueText}
           </p>
 
-          {/* Comic speech bubble tail */}
-          <div className="absolute -bottom-3 left-6 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] border-t-[#1E293B]" />
-          <div className="absolute -bottom-2 left-[25px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-white" />
+          {/* Comic speech bubble tail pointing to character */}
+          <div className="absolute -bottom-2.5 left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-[#1E293B]" />
+          <div className="absolute -bottom-1.5 left-[18px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white" />
         </div>
       </motion.div>
 
-      {/* 4. DYNAMIC INTERACTIVE CLUE TOKENS IN SCENE */}
-      <div className="absolute right-4 sm:right-6 top-4 sm:top-6 z-30 flex flex-col gap-2.5">
-        <span className="text-[10px] font-display font-black uppercase text-[#64748B] tracking-wider text-right block pr-1">
-          BẰNG CHỨNG HIỆN TRƯỜNG ({config.interactiveClues.length})
-        </span>
+      {/* 4. DYNAMIC INTERACTIVE CLUE TOKENS (Compact pills on top-right, zero collision) */}
+      <div className="absolute right-2 sm:right-3.5 top-2 sm:top-3 z-25 flex flex-col gap-1.5 items-end">
+        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1E293B]/85 text-[#FDE047] text-[9px] font-black uppercase tracking-wider backdrop-blur-xs shadow-sm">
+          <Sparkles className="w-2.5 h-2.5" />
+          MANH MỐI ({config.interactiveClues.length})
+        </div>
 
         {config.interactiveClues.map((clue, idx) => (
           <motion.button
@@ -102,60 +114,62 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
             onClick={() => handleInspectClue(clue)}
             initial={{ scale: 0, x: 20 }}
             animate={{ scale: 1, x: 0 }}
-            transition={{ delay: idx * 0.1 + 0.1 }}
-            whileHover={{ scale: 1.05, x: -3 }}
-            whileTap={{ scale: 0.95 }}
-            className="group relative flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/95 border-3 border-[#1E293B] shadow-[0_4px_0_#1E293B] hover:border-[#1A1AFF] transition-all text-left backdrop-blur-sm cursor-pointer"
+            transition={{ delay: idx * 0.08 + 0.05 }}
+            whileHover={{ scale: 1.04, x: -2 }}
+            whileTap={{ scale: 0.96 }}
+            className="group relative flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/95 border-2 border-[#1E293B] shadow-[0_2px_0_#1E293B] hover:border-[#1A1AFF] hover:bg-[#F8FAFC] transition-all text-left backdrop-blur-sm cursor-pointer w-auto max-w-[145px] sm:max-w-[175px]"
             title="Click để soi chi tiết bằng chứng"
           >
             {/* Pulsing radar dot for interactivity */}
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1A1AFF] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#1A1AFF]"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#1A1AFF]"></span>
             </span>
 
-            <div className="w-8 h-8 rounded-lg bg-[#F1F5F9] border-2 border-[#1E293B] flex items-center justify-center flex-shrink-0 group-hover:bg-[#E0E7FF] transition-colors">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#EFF6FF] border border-[#1E293B] flex items-center justify-center flex-shrink-0 group-hover:bg-[#DBEAFE] transition-colors">
               {getClueIcon(clue.iconType)}
             </div>
 
-            <div className="min-w-0 pr-1">
-              <span className="text-[11px] sm:text-xs font-display font-black text-[#0F172A] block leading-tight group-hover:text-[#1A1AFF] transition-colors">
+            <div className="min-w-0 pr-0.5">
+              <span className="text-[10px] sm:text-[11px] font-display font-black text-[#0F172A] block leading-tight truncate group-hover:text-[#1A1AFF] transition-colors">
                 {clue.label}
               </span>
-              <span className="text-[9px] font-bold text-[#64748B] flex items-center gap-1">
-                <Search className="w-2.5 h-2.5" /> Soi bằng chứng
+              <span className="text-[8px] sm:text-[9px] font-bold text-[#64748B] flex items-center gap-0.5">
+                <Search className="w-2.5 h-2.5 text-[#1A1AFF]" /> Soi chi tiết
               </span>
             </div>
           </motion.button>
         ))}
       </div>
 
-      {/* 5. FORENSIC CLUE INSPECTOR MODAL */}
+      {/* 5. FORENSIC CLUE INSPECTOR MODAL (Full viewport modal, never clipped) */}
       <AnimatePresence>
         {selectedClue && (
           <motion.div
-            className="absolute inset-0 z-50 bg-[#0F172A]/75 backdrop-blur-xs flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+            onClick={() => setSelectedClue(null)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-sm sm:max-w-md bg-white border-3 border-[#1E293B] rounded-2xl shadow-[0_8px_0_#1E293B] p-4 sm:p-5 space-y-3 relative overflow-hidden"
-              initial={{ scale: 0.85, y: 15 }}
+              className="w-full max-w-lg bg-white border-4 border-[#1E293B] rounded-2xl shadow-[0_12px_0_#1E293B] p-4 sm:p-5 relative my-auto max-h-[90vh] flex flex-col space-y-3"
+              onClick={(e) => e.stopPropagation()}
+              initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.85, y: 15 }}
+              exit={{ scale: 0.9, y: 20 }}
             >
-              {/* Top Bar */}
-              <div className="flex items-center justify-between border-b-2 border-[#E2E8F0] pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#1A1AFF] text-white flex items-center justify-center">
-                    <Eye className="w-4 h-4" />
+              {/* Sticky Top Bar with Title & Close Button */}
+              <div className="flex items-center justify-between border-b-2 border-[#CBD5E1] pb-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#1A1AFF] text-white flex items-center justify-center shadow-[0_2px_0_#000088] flex-shrink-0">
+                    <Eye className="w-4 h-4 stroke-[2.5]" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-black uppercase text-[#1A1AFF] block">
+                    <span className="text-[10px] font-black uppercase text-[#1A1AFF] tracking-wider block">
                       GIÁM ĐỊNH KỸ THUẬT SỐ
                     </span>
-                    <h4 className="font-display font-black text-sm text-[#0F172A]">
+                    <h4 className="font-display font-black text-sm sm:text-base text-[#0F172A]">
                       {selectedClue.actionPayload.title}
                     </h4>
                   </div>
@@ -163,75 +177,103 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
 
                 <button
                   onClick={() => setSelectedClue(null)}
-                  className="p-1 rounded-lg border-2 border-[#1E293B] hover:bg-[#F1F5F9] text-[#0F172A]"
+                  className="p-1.5 rounded-xl border-2 border-[#1E293B] bg-[#F1F5F9] hover:bg-[#E2E8F0] active:translate-y-0.5 text-[#0F172A] transition-all cursor-pointer"
+                  title="Đóng (Esc)"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5 stroke-[3]" />
                 </button>
               </div>
 
-              {/* Risk Level Badge */}
-              {selectedClue.actionPayload.riskLevel && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#64748B]">Mức độ rủi ro:</span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                      selectedClue.actionPayload.riskLevel === 'critical'
-                        ? 'bg-[#FEF2F2] border border-[#DC2626] text-[#DC2626]'
+              {/* Scrollable Body Container */}
+              <div className="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[60vh]">
+                {/* Risk Level Badge */}
+                {selectedClue.actionPayload.riskLevel && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#64748B]">Mức độ rủi ro:</span>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                        selectedClue.actionPayload.riskLevel === 'critical'
+                          ? 'bg-[#FEF2F2] border border-[#DC2626] text-[#DC2626]'
+                          : selectedClue.actionPayload.riskLevel === 'warning'
+                          ? 'bg-[#FEF3C7] border border-[#D97706] text-[#D97706]'
+                          : 'bg-[#ECFDF5] border border-[#059669] text-[#059669]'
+                      }`}
+                    >
+                      {selectedClue.actionPayload.riskLevel === 'critical'
+                        ? '🚨 Cực kỳ nguy hiểm'
                         : selectedClue.actionPayload.riskLevel === 'warning'
-                        ? 'bg-[#FEF3C7] border border-[#D97706] text-[#D97706]'
-                        : 'bg-[#ECFDF5] border border-[#059669] text-[#059669]'
-                    }`}
-                  >
-                    {selectedClue.actionPayload.riskLevel === 'critical' ? '🚨 Cực kỳ nguy hiểm' : selectedClue.actionPayload.riskLevel === 'warning' ? '⚠️ Đáng ngờ' : '🛡️ An toàn'}
-                  </span>
-                </div>
-              )}
+                        ? '⚠️ Đáng ngờ'
+                        : '🛡️ An toàn'}
+                    </span>
+                  </div>
+                )}
 
-              {/* Description */}
-              <p className="text-xs font-semibold text-[#334155] leading-relaxed bg-[#F8FAFC] p-2.5 rounded-xl border border-[#E2E8F0]">
-                {selectedClue.actionPayload.description}
-              </p>
+                {/* Description */}
+                <p className="text-xs font-semibold text-[#334155] leading-relaxed bg-[#F8FAFC] p-3 rounded-xl border-2 border-[#E2E8F0]">
+                  {selectedClue.actionPayload.description}
+                </p>
 
-              {/* Forensic Details List */}
-              {selectedClue.actionPayload.details && selectedClue.actionPayload.details.length > 0 && (
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-black uppercase text-[#64748B] block">
-                    Dấu vết phân tích:
-                  </span>
-                  <ul className="space-y-1">
-                    {selectedClue.actionPayload.details.map((detail, dIdx) => (
-                      <li key={dIdx} className="text-xs font-bold text-[#0F172A] flex items-start gap-1.5">
-                        <span className="text-[#1A1AFF] font-black">▸</span>
-                        <span>{detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                {/* Forensic Details List */}
+                {selectedClue.actionPayload.details && selectedClue.actionPayload.details.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-black uppercase text-[#64748B] tracking-wider block">
+                      DẤU VẾT PHÂN TÍCH:
+                    </span>
+                    <ul className="space-y-1.5">
+                      {selectedClue.actionPayload.details.map((detail, dIdx) => (
+                        <li key={dIdx} className="text-xs font-bold text-[#0F172A] flex items-start gap-2">
+                          <span className="text-[#1A1AFF] font-black text-sm leading-none">▸</span>
+                          <span>{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-              {/* Metadata Preview Box */}
-              {selectedClue.actionPayload.previewData && (
-                <div className="p-2.5 rounded-xl bg-[#0F172A] text-white font-mono text-[11px] space-y-1">
-                  <span className="text-[9px] font-bold uppercase text-[#94A3B8] block">Siêu dữ liệu viễn thông:</span>
-                  {selectedClue.actionPayload.previewData.sender && (
-                    <div className="truncate">Người gửi/Gọi: <strong className="text-[#FDE047]">{selectedClue.actionPayload.previewData.sender}</strong></div>
-                  )}
-                  {selectedClue.actionPayload.previewData.accountNumber && (
-                    <div>STK: <strong className="text-[#FDE047]">{selectedClue.actionPayload.previewData.accountNumber}</strong> ({selectedClue.actionPayload.previewData.bankName})</div>
-                  )}
-                  {selectedClue.actionPayload.previewData.timestamp && (
-                    <div>Thời gian: {selectedClue.actionPayload.previewData.timestamp}</div>
-                  )}
-                  {selectedClue.actionPayload.previewData.qrRawData && (
-                    <div className="text-[9px] text-[#94A3B8] truncate">Payload: {selectedClue.actionPayload.previewData.qrRawData}</div>
-                  )}
-                </div>
-              )}
+                {/* Metadata Preview Box */}
+                {selectedClue.actionPayload.previewData && (
+                  <div className="p-3 rounded-xl bg-[#0F172A] text-white font-mono text-xs space-y-1.5 border-2 border-[#334155]">
+                    <span className="text-[9px] font-bold uppercase text-[#94A3B8] tracking-wider block">
+                      SIÊU DỮ LIỆU VIỄN THÔNG / HỆ THỐNG:
+                    </span>
+                    {selectedClue.actionPayload.previewData.sender && (
+                      <div className="truncate">
+                        Người gửi/Gọi: <strong className="text-[#FDE047]">{selectedClue.actionPayload.previewData.sender}</strong>
+                      </div>
+                    )}
+                    {selectedClue.actionPayload.previewData.accountNumber && (
+                      <div>
+                        STK: <strong className="text-[#FDE047]">{selectedClue.actionPayload.previewData.accountNumber}</strong> ({selectedClue.actionPayload.previewData.bankName})
+                      </div>
+                    )}
+                    {selectedClue.actionPayload.previewData.timestamp && (
+                      <div>
+                        Thời gian: <span className="text-[#38BDF8]">{selectedClue.actionPayload.previewData.timestamp}</span>
+                      </div>
+                    )}
+                    {selectedClue.actionPayload.previewData.fileSize && (
+                      <div>
+                        Dung lượng: <span className="text-[#A7F3D0]">{selectedClue.actionPayload.previewData.fileSize}</span>
+                      </div>
+                    )}
+                    {selectedClue.actionPayload.previewData.url && (
+                      <div className="truncate text-[#F87171]">
+                        URL: {selectedClue.actionPayload.previewData.url}
+                      </div>
+                    )}
+                    {selectedClue.actionPayload.previewData.qrRawData && (
+                      <div className="text-[10px] text-[#94A3B8] break-all bg-black/40 p-1.5 rounded">
+                        Payload: {selectedClue.actionPayload.previewData.qrRawData}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-              {/* Close Button */}
+              {/* Close Action Button */}
               <button
                 onClick={() => setSelectedClue(null)}
-                className="w-full py-2.5 btn-game btn-game-primary text-xs flex items-center justify-center gap-1.5 shadow-[0_3px_0_#000066]"
+                className="w-full py-2.5 btn-game btn-game-primary text-xs flex items-center justify-center gap-1.5 shadow-[0_4px_0_#000066] active:translate-y-0.5 cursor-pointer mt-1"
               >
                 ĐÃ GHI NHẬN MANH MỐI
               </button>
