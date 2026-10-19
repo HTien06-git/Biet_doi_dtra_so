@@ -57,11 +57,11 @@ export default function AudioController({ className = '', showVolumeSlider = fal
         )}
       </button>
 
-      {/* Volume Slider Popover on Hover (Optional) */}
-      {(showVolumeSlider || showSlider) && (
+      {/* Volume Slider Popover on Desktop Hover Only (Hidden on mobile) */}
+      {showSlider && (
         <div
           onMouseLeave={() => setShowSlider(false)}
-          className="absolute right-0 top-full mt-1.5 p-2 rounded-xl bg-[#0F172A] border-2 border-[#1E293B] shadow-xl z-50 flex items-center gap-2 min-w-[130px] backdrop-blur-md"
+          className="hidden sm:flex absolute right-0 top-full mt-1.5 p-2 rounded-xl bg-[#0F172A] border-2 border-[#1E293B] shadow-xl z-50 items-center gap-2 min-w-[130px] backdrop-blur-md"
         >
           <Music className="w-3.5 h-3.5 text-[#38BDF8] flex-shrink-0" />
           <input

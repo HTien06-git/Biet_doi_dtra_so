@@ -132,7 +132,7 @@ export default function SummaryScreen() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <AudioController showVolumeSlider />
+            <AudioController />
             <button
               onClick={() => {
                 sounds.playClick();

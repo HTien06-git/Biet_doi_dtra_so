@@ -45,26 +45,12 @@ function GameContainer() {
 
   return (
     <main className="relative min-h-screen bg-game-backdrop text-[#1E293B] selection:bg-[#FFCA28] selection:text-[#3E2723]">
-      {/* Top Floating Controls (Sound & Leaderboard on welcome/lobby) */}
-      {state.currentScreen !== 'playing' && (
+      {/* Top Floating Sound Control on Welcome Screen only */}
+      {state.currentScreen === 'welcome' && (
         <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
-          {state.isLoggedIn && (
-            <button
-              onClick={() => {
-                sounds.playClick();
-                setShowLeaderboard(true);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border-2 border-[#1E293B] text-[#0F172A] hover:bg-[#F8FAFC] text-xs font-display font-black shadow-[0_3px_0_#1E293B] active:translate-y-0.5 transition-all"
-              title="Bảng Xếp Hạng"
-            >
-              <Trophy className="w-3.5 h-3.5 text-[#1A1AFF]" />
-              <span className="hidden sm:inline">Bảng Vàng</span>
-            </button>
-          )}
-
           <button
             onClick={handleToggleSound}
-            className="w-8 h-8 rounded-full bg-white border-2 border-[#1E293B] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-center shadow-[0_3px_0_#1E293B] active:translate-y-0.5 transition-all"
+            className="w-9 h-9 rounded-full bg-white border-2 border-[#1E293B] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-center shadow-[0_3px_0_#1E293B] active:translate-y-0.5 transition-all"
             title={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
           >
             {soundEnabled ? (

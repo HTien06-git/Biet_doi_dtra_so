@@ -72,7 +72,7 @@ export default function StationsScreen() {
           </div>
 
           <div className="flex items-center gap-2">
-            <AudioController showVolumeSlider />
+            <AudioController />
             <div className="w-9 h-9 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
               <Star className="w-5 h-5 fill-current text-[#FDE047]" />
             </div>

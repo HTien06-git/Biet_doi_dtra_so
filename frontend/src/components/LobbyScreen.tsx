@@ -3,11 +3,11 @@
 // ============================================================================
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FileText, Star, Search, RotateCcw, LogOut, ChevronRight, Trophy, Puzzle, Shield,
-  ShieldCheck, ExternalLink, Settings
+  ShieldCheck, ExternalLink, Settings, MoreVertical
 } from 'lucide-react';
 import Link from 'next/link';
 import { useGame } from '@/lib/gameStore';
@@ -22,6 +22,21 @@ import { multiplayerSync } from '@/lib/multiplayerSync';
 export default function LobbyScreen() {
   const { state, dispatch } = useGame();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when tapping outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showMenu]);
 
   const totalScore = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.totalScore, 0);
   const totalClues = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.cluesCollected, 0);
@@ -157,65 +172,118 @@ export default function LobbyScreen() {
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-12">
       {/* Header Bar Xanh Điện #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-2.5 shadow-lg text-white">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
-              <Search className="w-5 h-5 stroke-[3]" />
+      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
+          {/* Left: Detective Avatar & Player Name */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white flex-shrink-0 shadow-[0_2px_0_#000088]">
+              <Search className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
             </div>
-            <div>
-              <h1 className="font-display font-black text-sm sm:text-base uppercase tracking-wide text-white drop-shadow-sm">
+            <div className="min-w-0">
+              <h1 className="font-display font-black text-xs sm:text-base uppercase tracking-wide text-white drop-shadow-sm truncate">
                 ĐỘI ĐIỀU TRA SỐ
               </h1>
-              <p className="text-[11px] font-bold text-white/80">
+              <p className="text-[10px] sm:text-[11px] font-bold text-white/80 truncate">
                 {state.playerName} · Đội <strong className="text-[#FDE047]">{state.teamCode}</strong>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Nút Bảng Vàng */}
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* 1. Nút Bảng Vàng */}
             <button
               onClick={() => {
                 sounds.playClick();
                 setShowLeaderboard(true);
               }}
-              className="p-2 rounded-xl bg-[#FDE047] text-[#0F172A] font-black text-xs border-2 border-[#000088] shadow-[0_2px_0_#000088] active:translate-y-0.5 transition-all flex items-center gap-1 font-display"
+              className="px-2 sm:px-3 py-1.5 rounded-xl bg-[#FDE047] text-[#0F172A] font-black text-xs border-2 border-[#000088] shadow-[0_2px_0_#000088] active:translate-y-0.5 transition-all flex items-center gap-1 font-display"
               title="Xem Bảng Vàng"
             >
-              <Trophy className="w-3.5 h-3.5 fill-current" />
-              <span className="hidden sm:inline">BẢNG VÀNG</span>
+              <Trophy className="w-3.5 h-3.5 fill-current text-[#854D0E]" />
+              <span className="text-[11px] font-black uppercase sm:inline">Bảng Vàng</span>
             </button>
 
-            {/* Nút Âm Thanh BGM */}
-            <AudioController showVolumeSlider />
+            {/* 2. Nút Âm Thanh BGM */}
+            <AudioController />
 
-            {/* Nút Admin */}
-            <Link
-              href="/admin"
-              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
-              title="Trang Quản Trị Admin"
-            >
-              <Settings className="w-4 h-4 text-white" />
-            </Link>
+            {/* 3. Nút Thao Tác Nhanh trên Desktop */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <Link
+                href="/admin"
+                className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
+                title="Trang Quản Trị Admin"
+              >
+                <Settings className="w-4 h-4 text-white" />
+              </Link>
+              <button
+                onClick={handleReset}
+                className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
+                title="Khởi động lại tiến trình"
+              >
+                <RotateCcw className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-xl bg-[#EF4444] border-2 border-[#991B1B] hover:bg-[#DC2626] text-white active:translate-y-0.5 shadow-[0_2px_0_#7F1D1D] transition-all"
+                title="Đổi điều tra viên"
+              >
+                <LogOut className="w-4 h-4 text-white" />
+              </button>
+            </div>
 
-            {/* Khởi động lại */}
-            <button
-              onClick={handleReset}
-              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
-              title="Khởi động lại tiến trình"
-            >
-              <RotateCcw className="w-4 h-4 text-white" />
-            </button>
+            {/* 4. Menu Rút Gọn Trên Điện Thoại */}
+            <div className="relative sm:hidden" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className={`p-1.5 rounded-xl border-2 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all flex items-center justify-center ${
+                  showMenu
+                    ? 'bg-white text-[#1A1AFF] border-white'
+                    : 'bg-white/15 border-white/40 text-white hover:bg-white/25'
+                }`}
+                title="Menu Cài Đặt"
+                aria-label="Menu mở rộng"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
 
-            {/* Đổi điều tra viên */}
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-xl bg-[#EF4444] border-2 border-[#991B1B] hover:bg-[#DC2626] text-white active:translate-y-0.5 shadow-[0_2px_0_#7F1D1D] transition-all"
-              title="Đổi điều tra viên"
-            >
-              <LogOut className="w-4 h-4 text-white" />
-            </button>
+              {/* Dropdown Popover */}
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-white border-2 border-[#1E293B] shadow-2xl p-1.5 z-50 text-[#0F172A] space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-2.5 py-1 text-[10px] font-black uppercase text-[#64748B] tracking-wider border-b border-[#E2E8F0] mb-1">
+                    Tuỳ Chọn
+                  </div>
+                  <Link
+                    href="/admin"
+                    onClick={() => setShowMenu(false)}
+                    className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold hover:bg-[#EFF6FF] text-[#1E293B] transition-colors"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-[#2563EB]" />
+                    <span>Quản Trị Admin</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleReset();
+                    }}
+                    className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold hover:bg-[#F8FAFC] text-[#1E293B] transition-colors"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>Chơi Lại Từ Đầu</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleLogout();
+                    }}
+                    className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold hover:bg-[#FEF2F2] text-[#DC2626] transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-[#DC2626]" />
+                    <span>Đổi Điều Tra Viên</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>

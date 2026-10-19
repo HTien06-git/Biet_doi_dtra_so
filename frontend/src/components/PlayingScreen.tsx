@@ -267,7 +267,7 @@ export default function PlayingScreen() {
 
           <div className="flex items-center gap-2">
             {/* Nút Âm Thanh BGM Toàn Cục */}
-            <AudioController showVolumeSlider />
+            <AudioController />
 
             {/* Badge Điểm Thưởng Trạm */}
             <div className="px-3 py-1 rounded-xl bg-[#FDE047] border-2 border-[#000088] text-[#0F172A] text-xs font-black shadow-[0_2px_0_#000088] flex items-center gap-1 font-display">
