@@ -43,48 +43,52 @@ export default function StationsScreen() {
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-12">
       {/* Header Bar Xanh Điện #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-3 shadow-lg text-white">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
+      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg text-white">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-2.5 sm:gap-3">
           <button
             onClick={handleBack}
-            className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white"
+            className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white flex-shrink-0"
             title="Quay lại danh sách vụ án"
           >
             <ArrowLeft className="w-5 h-5 text-white stroke-[3]" />
           </button>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-[10px] font-black uppercase tracking-wider">
-                VỤ ÁN {caseData.caseNumber}
+            {/* Dòng 1: Badge Vụ án + Tiêu đề (cùng 1 hàng, không bao giờ ngắt chữ) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="px-1.5 py-0.5 sm:px-2 rounded-md bg-[#FDE047] text-[#0F172A] text-[9px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap flex-shrink-0 shadow-xs">
+                VỤ {caseData.caseNumber}
               </span>
-              <h1 className="font-display font-black text-sm uppercase text-white truncate drop-shadow-sm">
+              <h1 className="font-display font-black text-xs sm:text-sm uppercase text-white truncate drop-shadow-sm leading-tight">
                 {caseData.title}
               </h1>
             </div>
-            <div className="flex items-center gap-3 text-xs font-bold text-white/90 mt-0.5">
-              <span>{progress.stationsCompleted}/5 Trạm</span>
-              <span>·</span>
-              <span>{progress.cluesCollected}/5 Manh mối</span>
-              <span>·</span>
-              <span className="text-[#FDE047] font-black">{progress.totalScore}/100 Điểm</span>
+
+            {/* Dòng 2: Thông số tiến trình (luôn trên 1 dòng duy nhất, không nhảy chữ) */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 text-[10px] sm:text-xs font-bold text-white/90 mt-0.5 overflow-hidden">
+              <span className="whitespace-nowrap">{progress.stationsCompleted}/5 Trạm</span>
+              <span className="text-white/40">·</span>
+              <span className="whitespace-nowrap">{progress.cluesCollected}/5 Manh mối</span>
+              <span className="text-white/40">·</span>
+              <span className="text-[#FDE047] font-black whitespace-nowrap">{progress.totalScore}/100 Điểm</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             <AudioController />
-            <div className="w-9 h-9 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
+            <div className="hidden sm:flex w-9 h-9 rounded-xl bg-white/20 border-2 border-white/40 items-center justify-center text-white shadow-[0_2px_0_#000088]">
               <Star className="w-5 h-5 fill-current text-[#FDE047]" />
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-4">
-        {/* Banner Xanh Chủ Đạo #1A1AFF */}
-        <div className="game-blue-banner p-3.5 text-center flex items-center justify-center gap-2 text-xs sm:text-sm font-black uppercase text-white">
-          <MapPin className="w-4 h-4 text-[#FDE047]" />
-          LỘ TRÌNH ĐIỀU TRA: VƯỢT 5 TRẠM HIỆN TRƯỜNG
+      <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-3 sm:pt-6 space-y-3.5 sm:space-y-4">
+        {/* Banner Xanh Chủ Đạo #1A1AFF (Không bao giờ rớt 1 chữ TRƯỜNG xuống dòng) */}
+        <div className="game-blue-banner py-2.5 px-3 sm:p-3.5 text-center flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-sm font-black uppercase text-white shadow-md">
+          <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FDE047] flex-shrink-0" />
+          <span className="hidden sm:inline">LỘ TRÌNH ĐIỀU TRA: VƯỢT 5 TRẠM HIỆN TRƯỜNG</span>
+          <span className="sm:hidden whitespace-nowrap">LỘ TRÌNH 5 TRẠM HIỆN TRƯỜNG</span>
         </div>
 
         {/* 5 Stations Roadmap Cards */}
@@ -100,7 +104,7 @@ export default function StationsScreen() {
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.07 }}
-                className={`game-card p-4 flex items-center gap-4 cursor-pointer transition-all ${
+                className={`game-card p-3 sm:p-4 flex items-center gap-2.5 sm:gap-4 cursor-pointer transition-all ${
                   status === 'completed'
                     ? 'bg-[#F0FDF4] border-[#059669]'
                     : status === 'current'
@@ -110,7 +114,7 @@ export default function StationsScreen() {
               >
                 {/* Number Badge */}
                 <div
-                  className={`w-12 h-12 rounded-2xl border-3 border-[#1E293B] flex items-center justify-center font-display font-black text-lg flex-shrink-0 shadow-[0_3px_0_#1E293B] ${
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-3 border-[#1E293B] flex items-center justify-center font-display font-black text-base sm:text-lg flex-shrink-0 shadow-[0_3px_0_#1E293B] ${
                     status === 'completed'
                       ? 'bg-[#10B981] text-white'
                       : status === 'current'
@@ -123,27 +127,27 @@ export default function StationsScreen() {
 
                 {/* Station Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#64748B]">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-[#64748B] whitespace-nowrap">
                       TRẠM {index + 1} · {station.points} ĐIỂM
                     </span>
                     {status === 'completed' && (
-                      <span className="game-badge game-badge-green text-[9px] py-0">
+                      <span className="game-badge game-badge-green text-[9px] py-0 whitespace-nowrap flex-shrink-0">
                         ĐÃ XONG
                       </span>
                     )}
                     {status === 'current' && (
-                      <span className="inline-block px-2 py-0.5 rounded-md bg-[#1A1AFF] text-white text-[9px] font-black uppercase tracking-wider animate-pulse">
+                      <span className="inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-[#1A1AFF] text-white text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider animate-pulse whitespace-nowrap flex-shrink-0">
                         ĐANG CHỜ
                       </span>
                     )}
                   </div>
 
-                  <h3 className="font-display font-black text-sm text-[#0F172A] truncate">
+                  <h3 className="font-display font-black text-xs sm:text-sm text-[#0F172A] truncate">
                     {station.title}
                   </h3>
 
-                  <p className="text-xs text-[#64748B] line-clamp-1 mt-0.5 font-medium">
+                  <p className="text-[11px] sm:text-xs text-[#64748B] line-clamp-1 mt-0.5 font-medium">
                     {station.scenario}
                   </p>
                 </div>

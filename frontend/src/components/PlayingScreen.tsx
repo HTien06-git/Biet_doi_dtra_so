@@ -240,37 +240,37 @@ export default function PlayingScreen() {
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-8">
       {/* 1. Header Bar Xanh Chủ Đạo #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-2.5 shadow-lg text-white">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
               onClick={handleGoBack}
-              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white"
+              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white flex-shrink-0"
               title="Quay lại lộ trình"
             >
               <ArrowLeft className="w-5 h-5 text-white stroke-[3]" />
             </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-block px-2 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-[10px] font-black uppercase tracking-wider">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-[#FDE047] text-[#0F172A] text-[9px] sm:text-[10px] font-black uppercase tracking-wider whitespace-nowrap flex-shrink-0">
                   TRẠM {state.currentStationIndex + 1}/5
                 </span>
-                <span className="text-[11px] font-bold text-white/80 hidden sm:inline-block">
+                <span className="text-[11px] font-bold text-white/80 hidden sm:inline-block truncate">
                   {state.playerName} · Đội <strong>{state.teamCode}</strong>
                 </span>
               </div>
-              <h1 className="font-display font-black text-xs sm:text-base text-white truncate max-w-[200px] sm:max-w-md drop-shadow-sm">
+              <h1 className="font-display font-black text-xs sm:text-base text-white truncate max-w-[190px] sm:max-w-md drop-shadow-sm leading-tight">
                 {station.title}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {/* Nút Âm Thanh BGM Toàn Cục */}
             <AudioController />
 
             {/* Badge Điểm Thưởng Trạm */}
-            <div className="px-3 py-1 rounded-xl bg-[#FDE047] border-2 border-[#000088] text-[#0F172A] text-xs font-black shadow-[0_2px_0_#000088] flex items-center gap-1 font-display">
+            <div className="px-2 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-[#FDE047] border-2 border-[#000088] text-[#0F172A] text-[10px] sm:text-xs font-black shadow-[0_2px_0_#000088] flex items-center gap-1 font-display whitespace-nowrap flex-shrink-0">
               ⭐ +{station.points} ĐIỂM
             </div>
           </div>
