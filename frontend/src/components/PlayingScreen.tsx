@@ -17,6 +17,7 @@ import { sounds } from '@/lib/sounds';
 import GameIcon from './GameIcon';
 import StationCanvas from '@/components/game/StationCanvas';
 import { multiplayerSync } from '@/lib/multiplayerSync';
+import AudioController from '@/components/ui/AudioController';
 
 export default function PlayingScreen() {
   const {
@@ -219,18 +220,8 @@ export default function PlayingScreen() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Nút Âm Thanh */}
-            <button
-              onClick={toggleSound}
-              className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
-              title={isSoundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
-            >
-              {isSoundEnabled ? (
-                <Volume2 className="w-4 h-4 text-white" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-white/70" />
-              )}
-            </button>
+            {/* Nút Âm Thanh BGM Toàn Cục */}
+            <AudioController showVolumeSlider />
 
             {/* Badge Điểm Thưởng Trạm */}
             <div className="px-3 py-1 rounded-xl bg-[#FDE047] border-2 border-[#000088] text-[#0F172A] text-xs font-black shadow-[0_2px_0_#000088] flex items-center gap-1 font-display">

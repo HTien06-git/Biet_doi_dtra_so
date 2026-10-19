@@ -10,6 +10,7 @@ import {
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
 import GameIcon from './GameIcon';
+import AudioController from '@/components/ui/AudioController';
 
 export default function StationsScreen() {
   const { state, dispatch, getCurrentCase, getCurrentCaseProgress } = useGame();
@@ -70,8 +71,11 @@ export default function StationsScreen() {
             </div>
           </div>
 
-          <div className="w-9 h-9 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
-            <Star className="w-5 h-5 fill-current text-[#FDE047]" />
+          <div className="flex items-center gap-2">
+            <AudioController showVolumeSlider />
+            <div className="w-9 h-9 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
+              <Star className="w-5 h-5 fill-current text-[#FDE047]" />
+            </div>
           </div>
         </div>
       </header>

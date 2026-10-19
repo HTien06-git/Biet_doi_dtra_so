@@ -15,6 +15,7 @@ import { CASES_DATA } from '@/data/casesData';
 import { sounds } from '@/lib/sounds';
 import GameIcon, { GameIconType } from './GameIcon';
 import LeaderboardModal from './LeaderboardModal';
+import AudioController from '@/components/ui/AudioController';
 
 export default function LobbyScreen() {
   const { state, dispatch } = useGame();
@@ -84,6 +85,9 @@ export default function LobbyScreen() {
               <Trophy className="w-3.5 h-3.5 fill-current" />
               <span className="hidden sm:inline">BẢNG VÀNG</span>
             </button>
+
+            {/* Nút Âm Thanh BGM */}
+            <AudioController showVolumeSlider />
 
             {/* Nút Admin */}
             <Link

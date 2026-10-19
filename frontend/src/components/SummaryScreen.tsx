@@ -15,6 +15,7 @@ import { sounds } from '@/lib/sounds';
 import { SolvedStamp } from '@/assets/illustrations';
 import GameIcon from './GameIcon';
 import LeaderboardModal from './LeaderboardModal';
+import AudioController from '@/components/ui/AudioController';
 
 export default function SummaryScreen() {
   const { state, dispatch, getCurrentCase, getCurrentCaseProgress } = useGame();
@@ -130,15 +131,18 @@ export default function SummaryScreen() {
               HỒ SƠ PHÁ ÁN HOÀN TẤT
             </h1>
           </div>
-          <button
-            onClick={() => {
-              sounds.playClick();
-              dispatch({ type: 'COMPLETE_CASE' });
-            }}
-            className="p-1.5 px-3 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white font-display font-black text-xs"
-          >
-            Về Danh Sách Vụ
-          </button>
+          <div className="flex items-center gap-2">
+            <AudioController showVolumeSlider />
+            <button
+              onClick={() => {
+                sounds.playClick();
+                dispatch({ type: 'COMPLETE_CASE' });
+              }}
+              className="p-1.5 px-3 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all text-white font-display font-black text-xs"
+            >
+              Về Danh Sách Vụ
+            </button>
+          </div>
         </div>
       </header>
 

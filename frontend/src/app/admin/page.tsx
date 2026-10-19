@@ -13,6 +13,7 @@ import { PlayerSession, getAllSessions, savePlayerSession } from '@/lib/supabase
 import { CASES_DATA } from '@/data/casesData';
 import { multiplayerSync } from '@/lib/multiplayerSync';
 import { TelemetryEvent, ConnectedDevice } from '@/types/case';
+import AudioController from '@/components/ui/AudioController';
 
 // Fallback password if env is not loaded on client
 const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
@@ -46,7 +47,7 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  // Listen to Live Telemetry & Connected Devices Stream
+  // Listen to Live Telemetry, Connected Devices & Real-time Session Sync
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -58,9 +59,40 @@ export default function AdminDashboardPage() {
       setTelemetryEvents((prev) => [evt, ...prev.slice(0, 79)]);
     });
 
+    // Real-Time Cross-Device Session Sync (Instantly updates when any device finishes)
+    const unsubSessions = multiplayerSync.onSessionUpdate((newSession) => {
+      setSessions((prev) => {
+        const idx = prev.findIndex(
+          (s) => s.player_name === newSession.player_name &&
+                 s.team_code === newSession.team_code &&
+                 s.case_id === newSession.case_id
+        );
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = newSession;
+          return next;
+        }
+        return [newSession, ...prev];
+      });
+
+      if (newSession.is_completed) {
+        showNotification('success', `🎉 Đội ${newSession.team_code} vừa hoàn thành phá án (${newSession.total_score}đ)!`);
+      }
+    });
+
+    // Request sync from any online devices
+    multiplayerSync.requestSync();
+
+    // Periodic background poll every 8 seconds to ensure latest server data
+    const pollInterval = setInterval(() => {
+      fetchSessions();
+    }, 8000);
+
     return () => {
       unsubDevices();
       unsubEvents();
+      unsubSessions();
+      clearInterval(pollInterval);
     };
   }, [isAuthenticated]);
 
@@ -107,10 +139,14 @@ export default function AdminDashboardPage() {
     setIsLoading(true);
     try {
       const data = await getAllSessions();
-      setSessions(data || []);
+      setSessions((prev) => {
+        const merged = new Map<string, PlayerSession>();
+        prev.forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
+        (data || []).forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
+        return Array.from(merged.values());
+      });
     } catch (e: any) {
       console.error('Fetch sessions failed:', e);
-      showNotification('error', 'Lỗi tải danh sách người chơi!');
     } finally {
       setIsLoading(false);
     }
@@ -490,6 +526,8 @@ export default function AdminDashboardPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            <AudioController showVolumeSlider />
+
             <button
               onClick={fetchSessions}
               disabled={isLoading}

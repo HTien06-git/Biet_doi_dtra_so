@@ -1,17 +1,22 @@
 // ============================================================================
 // LIB/MULTIPLAYERSYNC.TS
-// REAL-TIME MULTIPLAYER SYNC & LIVE TELEMETRY ENGINE
-// Supports 50+ concurrent active devices with low-latency Supabase Realtime
-// Broadcast & local BroadcastChannel fallback for multi-tenant sessions.
+// REAL-TIME MULTIPLAYER SYNC & CROSS-DEVICE TELEMETRY ENGINE
+// Connects devices across the internet via Public Cloud WebSocket Relay (EMQX/HiveMQ)
+// + Supabase Realtime + local BroadcastChannel fallback for multi-tenant sessions.
 // ============================================================================
 
-import { supabase, isSupabaseConfigured } from './supabase';
-import { TelemetryEvent, ConnectedDevice, SyncEventType } from '@/types/case';
+import { supabase, isSupabaseConfigured, PlayerSession } from './supabase';
+import { TelemetryEvent, ConnectedDevice } from '@/types/case';
+import mqtt, { MqttClient } from 'mqtt';
 
-const BROADCAST_CHANNEL_NAME = 'dts-live-telemetry';
 const LOCAL_CHANNEL_KEY = 'dts_broadcast_channel';
+const MQTT_BROKER_URL = 'wss://broker.emqx.io:8084/mqtt';
+const MQTT_FALLBACK_URL = 'wss://broker.hivemq.com:8884/mqtt';
 
-// Generate stable or session device id
+const TOPIC_TELEMETRY = 'dts/v1/telemetry';
+const TOPIC_SESSIONS = 'dts/v1/sessions';
+const TOPIC_SYNC = 'dts/v1/sync';
+
 export function getOrCreateDeviceId(): string {
   if (typeof window === 'undefined') return 'server_device';
   let id = sessionStorage.getItem('dts_device_id');
@@ -25,8 +30,12 @@ export function getOrCreateDeviceId(): string {
 class MultiplayerSyncManager {
   private localBroadcastChannel: BroadcastChannel | null = null;
   private supabaseChannel: any = null;
-  private listeners: Set<(event: TelemetryEvent) => void> = new Set();
+  private mqttClient: MqttClient | null = null;
+
+  private telemetryListeners: Set<(event: TelemetryEvent) => void> = new Set();
   private deviceListeners: Set<(devices: ConnectedDevice[]) => void> = new Set();
+  private sessionListeners: Set<(session: PlayerSession) => void> = new Set();
+
   private activeDevices: Map<string, ConnectedDevice> = new Map();
   private heartbeatTimer: NodeJS.Timeout | null = null;
   private cleanupTimer: NodeJS.Timeout | null = null;
@@ -43,13 +52,17 @@ class MultiplayerSyncManager {
     if (this.isInitialized || typeof window === 'undefined') return;
     this.isInitialized = true;
 
-    // 1. Initialize local HTML5 BroadcastChannel for multi-tab zero-config sync
+    // 1. Initialize local HTML5 BroadcastChannel (fast local tab sync)
     try {
       if ('BroadcastChannel' in window) {
         this.localBroadcastChannel = new BroadcastChannel(LOCAL_CHANNEL_KEY);
         this.localBroadcastChannel.onmessage = (e) => {
-          if (e.data && e.data.__dts_telemetry) {
-            this.handleIncomingEvent(e.data.event);
+          if (e.data) {
+            if (e.data.__dts_telemetry) {
+              this.handleIncomingTelemetry(e.data.event);
+            } else if (e.data.__dts_session) {
+              this.handleIncomingSession(e.data.session);
+            }
           }
         };
       }
@@ -57,37 +70,83 @@ class MultiplayerSyncManager {
       console.warn('BroadcastChannel not supported:', err);
     }
 
-    // 2. Initialize Supabase Realtime Broadcast Channel (Low Latency WebSocket)
+    // 2. Initialize Global Public Cloud WebSocket Relay (EMQX Broker)
+    // Allows phones, laptops, and tablets across the internet to sync instantly
+    try {
+      const clientId = 'dts_' + getOrCreateDeviceId();
+      const client = mqtt.connect(MQTT_BROKER_URL, {
+        clientId,
+        clean: true,
+        connectTimeout: 8000,
+        reconnectPeriod: 5000,
+      });
+
+      client.on('connect', () => {
+        console.log('📡 Connected to Global Cloud Relay (EMQX WebSocket)');
+        client.subscribe([TOPIC_TELEMETRY, TOPIC_SESSIONS, TOPIC_SYNC], (err) => {
+          if (err) console.warn('MQTT Subscribe error:', err);
+        });
+      });
+
+      client.on('message', (topic, payload) => {
+        try {
+          const raw = payload.toString();
+          const data = JSON.parse(raw);
+
+          if (topic === TOPIC_TELEMETRY && data.id) {
+            this.handleIncomingTelemetry(data);
+          } else if (topic === TOPIC_SESSIONS && data.player_name) {
+            this.handleIncomingSession(data);
+          } else if (topic === TOPIC_SYNC && data.type === 'SYNC_REQUEST') {
+            // If we have an active device or saved sessions, respond to help the joining Admin
+            this.respondToSyncRequest();
+          }
+        } catch {
+          // Ignore malformed packet
+        }
+      });
+
+      client.on('error', (err) => {
+        console.warn('MQTT Connection error, switching to fallback:', err);
+      });
+
+      this.mqttClient = client;
+    } catch (err) {
+      console.warn('Could not initialize Cloud WebSocket Relay:', err);
+    }
+
+    // 3. Initialize Supabase Realtime if configured
     if (isSupabaseConfigured && supabase) {
       try {
-        this.supabaseChannel = supabase.channel(BROADCAST_CHANNEL_NAME, {
+        this.supabaseChannel = supabase.channel('dts-live-telemetry', {
           config: { broadcast: { self: false } },
         });
 
         this.supabaseChannel
           .on('broadcast', { event: 'telemetry' }, (payload: any) => {
             if (payload && payload.payload) {
-              this.handleIncomingEvent(payload.payload);
+              this.handleIncomingTelemetry(payload.payload);
             }
           })
-          .subscribe((status: string) => {
-            if (status === 'SUBSCRIBED') {
-              console.log('📡 Connected to Supabase Realtime Telemetry Broadcast');
+          .on('broadcast', { event: 'session' }, (payload: any) => {
+            if (payload && payload.payload) {
+              this.handleIncomingSession(payload.payload);
             }
-          });
+          })
+          .subscribe();
       } catch (err) {
         console.warn('Supabase Realtime subscription error:', err);
       }
     }
 
-    // 3. Heartbeat sweep timer to prune devices that haven't responded in 30s
+    // 4. Heartbeat sweep timer to prune devices that haven't responded in 45s
     this.cleanupTimer = setInterval(() => {
       this.pruneStaleDevices();
     }, 10000);
   }
 
-  // Handle incoming event from any device
-  private handleIncomingEvent(event: TelemetryEvent) {
+  // Handle incoming telemetry event from any device
+  private handleIncomingTelemetry(event: TelemetryEvent) {
     if (!event || !event.id) return;
 
     // Update active device registry
@@ -107,25 +166,30 @@ class MultiplayerSyncManager {
 
     this.activeDevices.set(deviceId, updatedDevice);
 
-    // Notify event subscribers
-    this.listeners.forEach((listener) => {
-      try {
-        listener(event);
-      } catch (e) {
-        console.error('Error in telemetry listener:', e);
-      }
+    // Notify telemetry subscribers
+    this.telemetryListeners.forEach((l) => {
+      try { l(event); } catch (e) { console.error(e); }
     });
 
     // Notify device list subscribers
     this.notifyDeviceSubscribers();
   }
 
+  // Handle incoming completed session record from any device
+  private handleIncomingSession(session: PlayerSession) {
+    if (!session || !session.player_name || !session.team_code) return;
+
+    // Notify session listeners (e.g. Admin Dashboard)
+    this.sessionListeners.forEach((l) => {
+      try { l(session); } catch (e) { console.error(e); }
+    });
+  }
+
   private pruneStaleDevices() {
     const now = Date.now();
     let hasChanges = false;
-    this.activeDevices.forEach((dev, key) => {
+    this.activeDevices.forEach((dev) => {
       const lastActiveTime = new Date(dev.lastActive).getTime();
-      // If inactive for > 45 seconds, mark offline or remove
       if (now - lastActiveTime > 45000) {
         if (dev.isOnline) {
           dev.isOnline = false;
@@ -141,15 +205,11 @@ class MultiplayerSyncManager {
   private notifyDeviceSubscribers() {
     const list = Array.from(this.activeDevices.values());
     this.deviceListeners.forEach((listener) => {
-      try {
-        listener(list);
-      } catch (e) {
-        console.error('Error in device listener:', e);
-      }
+      try { listener(list); } catch (e) { console.error(e); }
     });
   }
 
-  // Register / update current player device and start heartbeats
+  // Register device presence & start periodic heartbeats
   public registerDevice(params: {
     playerName: string;
     teamCode: string;
@@ -169,11 +229,10 @@ class MultiplayerSyncManager {
       isOnline: true,
     };
 
-    // Store in active devices
     this.activeDevices.set(deviceId, this.currentDevice);
     this.notifyDeviceSubscribers();
 
-    // Broadcast online event
+    // Broadcast online event across network
     this.broadcastEvent({
       eventType: 'DEVICE_ONLINE',
       playerName: params.playerName,
@@ -183,7 +242,6 @@ class MultiplayerSyncManager {
       totalScore: params.score,
     });
 
-    // Start 12-second periodic heartbeat
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = setInterval(() => {
       if (this.currentDevice) {
@@ -199,7 +257,7 @@ class MultiplayerSyncManager {
     }, 12000);
   }
 
-  // Broadcast a high-speed telemetry event to all connected peers
+  // Broadcast a high-speed telemetry event to ALL connected peers across the globe
   public broadcastEvent(eventData: Omit<TelemetryEvent, 'id' | 'timestamp' | 'deviceInfo'>) {
     if (typeof window === 'undefined') return;
 
@@ -211,7 +269,7 @@ class MultiplayerSyncManager {
       deviceInfo: deviceId,
     };
 
-    // Update local self state
+    // Update self state
     if (this.currentDevice) {
       this.currentDevice.currentCaseId = eventData.caseId;
       this.currentDevice.currentStationId = eventData.stationId;
@@ -221,7 +279,16 @@ class MultiplayerSyncManager {
       this.notifyDeviceSubscribers();
     }
 
-    // 1. Send via local BroadcastChannel
+    // 1. Send via Global MQTT Cloud WebSocket Relay (EMQX)
+    if (this.mqttClient && this.mqttClient.connected) {
+      try {
+        this.mqttClient.publish(TOPIC_TELEMETRY, JSON.stringify(fullEvent));
+      } catch (err) {
+        console.warn('MQTT publish error:', err);
+      }
+    }
+
+    // 2. Send via local BroadcastChannel
     if (this.localBroadcastChannel) {
       try {
         this.localBroadcastChannel.postMessage({
@@ -229,11 +296,11 @@ class MultiplayerSyncManager {
           event: fullEvent,
         });
       } catch (e) {
-        console.warn('BroadcastChannel postMessage error:', e);
+        console.warn('BroadcastChannel error:', e);
       }
     }
 
-    // 2. Send via Supabase Realtime WebSocket broadcast
+    // 3. Send via Supabase Realtime WebSocket if connected
     if (this.supabaseChannel) {
       try {
         this.supabaseChannel.send({
@@ -241,34 +308,91 @@ class MultiplayerSyncManager {
           event: 'telemetry',
           payload: fullEvent,
         });
-      } catch (e) {
-        console.warn('Supabase Realtime broadcast send error:', e);
+      } catch {}
+    }
+
+    // 4. Trigger local self listeners
+    this.telemetryListeners.forEach((l) => l(fullEvent));
+  }
+
+  // Broadcast completed player session across all devices online
+  public broadcastSession(session: PlayerSession) {
+    if (typeof window === 'undefined') return;
+
+    // 1. Send via Global MQTT Cloud WebSocket Relay (EMQX)
+    if (this.mqttClient && this.mqttClient.connected) {
+      try {
+        this.mqttClient.publish(TOPIC_SESSIONS, JSON.stringify(session));
+      } catch (err) {
+        console.warn('MQTT session publish error:', err);
       }
     }
 
-    // 3. Trigger local listeners
-    this.listeners.forEach((l) => l(fullEvent));
+    // 2. Send via local BroadcastChannel
+    if (this.localBroadcastChannel) {
+      try {
+        this.localBroadcastChannel.postMessage({
+          __dts_session: true,
+          session,
+        });
+      } catch {}
+    }
+
+    // 3. Send via Supabase Realtime if connected
+    if (this.supabaseChannel) {
+      try {
+        this.supabaseChannel.send({
+          type: 'broadcast',
+          event: 'session',
+          payload: session,
+        });
+      } catch {}
+    }
   }
 
-  // Subscribe to raw telemetry stream (for Admin & Debugger)
+  private respondToSyncRequest() {
+    try {
+      const data = localStorage.getItem('dts_player_sessions');
+      if (data) {
+        const list: PlayerSession[] = JSON.parse(data);
+        if (Array.isArray(list)) {
+          list.forEach((s) => this.broadcastSession(s));
+        }
+      }
+    } catch {}
+  }
+
+  public requestSync() {
+    if (this.mqttClient && this.mqttClient.connected) {
+      try {
+        this.mqttClient.publish(TOPIC_SYNC, JSON.stringify({ type: 'SYNC_REQUEST' }));
+      } catch {}
+    }
+  }
+
   public onTelemetry(listener: (event: TelemetryEvent) => void): () => void {
-    this.listeners.add(listener);
+    this.telemetryListeners.add(listener);
     return () => {
-      this.listeners.delete(listener);
+      this.telemetryListeners.delete(listener);
     };
   }
 
-  // Subscribe to active devices list
   public onDevicesChange(listener: (devices: ConnectedDevice[]) => void): () => void {
     this.deviceListeners.add(listener);
-    // Send immediate snapshot
     listener(Array.from(this.activeDevices.values()));
     return () => {
       this.deviceListeners.delete(listener);
     };
   }
 
-  // Concurrency Simulation: Spawns simulated active devices to test 50+ concurrent load
+  public onSessionUpdate(listener: (session: PlayerSession) => void): () => void {
+    this.sessionListeners.add(listener);
+    return () => {
+      this.sessionListeners.delete(listener);
+    };
+  }
+
+  // Concurrency Simulation for testing 50+ devices
   public simulateHighConcurrency(targetCount: number = 55): () => void {
     const teams = ['CYBER-ALPHA', 'SEC-SHIELD', 'FIREWALL-07', 'DEFENDER-X', 'NET-SENTINEL', 'CODE-FORCE', 'PHISH-BUSTER'];
     const names = [
@@ -304,7 +428,6 @@ class MultiplayerSyncManager {
 
     this.notifyDeviceSubscribers();
 
-    // Simulate occasional random activity (progressing, finding clues)
     const interval = setInterval(() => {
       if (simDeviceIds.length === 0) return;
       const pickId = simDeviceIds[Math.floor(Math.random() * simDeviceIds.length)];
@@ -326,7 +449,6 @@ class MultiplayerSyncManager {
       }
     }, 4000);
 
-    // Return cleanup function
     return () => {
       clearInterval(interval);
       simDeviceIds.forEach((id) => this.activeDevices.delete(id));
@@ -335,5 +457,4 @@ class MultiplayerSyncManager {
   }
 }
 
-// Global Singleton Instance
 export const multiplayerSync = new MultiplayerSyncManager();

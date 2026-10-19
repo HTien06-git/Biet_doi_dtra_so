@@ -22,6 +22,8 @@ export const metadata: Metadata = {
   keywords: ["đội điều tra số", "an toàn thông tin", "phá án", "case hunter", "web game giáo dục"],
 };
 
+import { AudioProvider } from "./providers/AudioProvider";
+
 export default function RootLayout({
   children,
 }: {
@@ -30,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${fontDisplay.variable} ${fontSans.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans bg-[#FDF6E3] text-[#1E293B]">
-        {children}
+        <AudioProvider>
+          {children}
+        </AudioProvider>
       </body>
     </html>
   );
