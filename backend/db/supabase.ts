@@ -7,11 +7,19 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
+export const isSupabaseConfigured = !!(
+  supabaseUrl &&
+  supabaseAnonKey &&
+  !supabaseUrl.includes('your-project-ref')
+);
 
 let supabase: SupabaseClient | null = null;
 if (isSupabaseConfigured) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  } catch (err) {
+    console.warn('Supabase initialization failed in backend:', err);
+  }
 }
 
 export { supabase };
@@ -34,8 +42,17 @@ export interface DbPlayerSession {
   updated_at?: string;
 }
 
-// In-memory fallback for local development if Supabase not configured
-const memorySessions: DbPlayerSession[] = [];
+// Global serverless memory storage fallback
+const getMemorySessions = (): Map<string, DbPlayerSession> => {
+  const g = globalThis as any;
+  if (!g.__DTS_BACKEND_SESSIONS__) {
+    g.__DTS_BACKEND_SESSIONS__ = new Map<string, DbPlayerSession>();
+  }
+  return g.__DTS_BACKEND_SESSIONS__;
+};
+
+const MOCK_TEAMS = new Set(['CYBER-ALPHA', 'SEC-SHIELD', 'FIREWALL-07', 'DEFENDER-X', 'ZERO-TRUST']);
+const MOCK_NAMES = new Set(['Nguyễn Văn An', 'Trần Thị Mai', 'Lê Hoàng Minh', 'Phạm Quốc Hùng', 'Hoàng Thùy Linh']);
 
 export function generateBtcCode(caseId: number, playerName: string, teamCode: string): string {
   const seed = `${playerName}-${teamCode}-${caseId}-${Date.now()}`;
@@ -49,7 +66,7 @@ export function generateBtcCode(caseId: number, playerName: string, teamCode: st
 }
 
 export async function upsertSession(session: DbPlayerSession): Promise<DbPlayerSession> {
-  const withCode = {
+  const withCode: DbPlayerSession = {
     ...session,
     confirmation_code: session.is_completed && !session.confirmation_code
       ? generateBtcCode(session.case_id, session.player_name, session.team_code)
@@ -57,59 +74,98 @@ export async function upsertSession(session: DbPlayerSession): Promise<DbPlayerS
     updated_at: new Date().toISOString(),
   };
 
+  const key = `${withCode.player_name}_${withCode.team_code}_${withCode.case_id}`;
+  const memMap = getMemorySessions();
+  memMap.set(key, withCode);
+
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase
-      .from('player_sessions')
-      .upsert(withCode, { onConflict: 'player_name,team_code,case_id' })
-      .select()
-      .single();
-    if (error) {
-      console.warn('Supabase upsert error, using fallback:', error.message);
-      return saveInMemory(withCode);
+    try {
+      const { data, error } = await supabase
+        .from('player_sessions')
+        .upsert(withCode, { onConflict: 'player_name,team_code,case_id' })
+        .select()
+        .single();
+      if (!error && data) {
+        return data as DbPlayerSession;
+      }
+    } catch (err: any) {
+      console.warn('Supabase upsert error, saved to memory:', err.message);
     }
-    return data as DbPlayerSession;
   }
 
-  return saveInMemory(withCode);
+  return withCode;
 }
 
 export async function getPlayerSessions(playerName: string, teamCode: string): Promise<DbPlayerSession[]> {
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase
-      .from('player_sessions')
-      .select('*')
-      .eq('player_name', playerName)
-      .eq('team_code', teamCode);
-    if (!error && data) return data;
+    try {
+      const { data, error } = await supabase
+        .from('player_sessions')
+        .select('*')
+        .eq('player_name', playerName)
+        .eq('team_code', teamCode);
+      if (!error && data && data.length > 0) return data;
+    } catch (e) {
+      console.warn('Supabase getPlayerSessions error:', e);
+    }
   }
-  return memorySessions.filter((s) => s.player_name === playerName && s.team_code === teamCode);
+
+  const list = Array.from(getMemorySessions().values());
+  return list.filter((s) => s.player_name === playerName && s.team_code === teamCode);
+}
+
+export async function getAllDbSessions(): Promise<DbPlayerSession[]> {
+  let sessions: DbPlayerSession[] = [];
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('player_sessions')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      if (!error && data) {
+        sessions = data;
+      }
+    } catch (e: any) {
+      console.warn('Supabase getAllDbSessions error:', e.message);
+    }
+  }
+
+  if (sessions.length === 0) {
+    sessions = Array.from(getMemorySessions().values());
+  }
+
+  // Lọc chỉ lấy dữ liệu thật: bỏ mock data và các phiên rỗng chưa bắt đầu
+  return sessions.filter((s) => {
+    if (MOCK_TEAMS.has(s.team_code) || MOCK_NAMES.has(s.player_name)) return false;
+    if (!s.start_time && (s.total_score || 0) === 0 && (s.stations_completed || 0) === 0 && !s.is_completed) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export async function clearAllDbSessions(): Promise<void> {
+  const memMap = getMemorySessions();
+  memMap.clear();
+
+  if (isSupabaseConfigured && supabase) {
+    try {
+      await supabase.from('player_sessions').delete().neq('case_id', -999);
+    } catch (e: any) {
+      console.warn('Supabase clear error:', e.message);
+    }
+  }
 }
 
 export async function getLeaderboard(caseId?: number): Promise<DbPlayerSession[]> {
-  if (isSupabaseConfigured && supabase) {
-    let query = supabase.from('player_sessions').select('*').order('total_score', { ascending: false });
-    if (caseId) {
-      query = query.eq('case_id', caseId);
-    }
-    const { data, error } = await query;
-    if (!error && data) return data;
-  }
-
-  const list = caseId ? memorySessions.filter((s) => s.case_id === caseId) : memorySessions;
-  return [...list].sort((a, b) => b.total_score - a.total_score);
-}
-
-function saveInMemory(session: DbPlayerSession): DbPlayerSession {
-  const idx = memorySessions.findIndex(
-    (s) => s.player_name === session.player_name &&
-           s.team_code === session.team_code &&
-           s.case_id === session.case_id
-  );
-  if (idx >= 0) {
-    memorySessions[idx] = { ...session };
-    return memorySessions[idx];
-  }
-  const created = { ...session, created_at: new Date().toISOString() };
-  memorySessions.push(created);
-  return created;
+  const all = await getAllDbSessions();
+  const filtered = caseId ? all.filter((s) => s.case_id === caseId) : all;
+  
+  // Sắp xếp: ưu tiên hoàn thành trước, sau đó theo điểm số cao nhất và thời gian nhanh nhất
+  return [...filtered].sort((a, b) => {
+    if (a.is_completed !== b.is_completed) return a.is_completed ? -1 : 1;
+    if (b.total_score !== a.total_score) return (b.total_score || 0) - (a.total_score || 0);
+    return (a.duration_seconds || 999999) - (b.duration_seconds || 999999);
+  });
 }

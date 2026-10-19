@@ -1,41 +1,100 @@
 // ============================================================================
 // API: /api/admin-sessions
 // Endpoint backend serverless cho trang quản trị Admin
+// Hỗ trợ truy vấn tiến độ người chơi, xác thực mật khẩu, và dọn sạch dữ liệu thi đấu
 // ============================================================================
-import { supabase, isSupabaseConfigured, DbPlayerSession } from '../db/supabase';
+import {
+  getAllDbSessions,
+  clearAllDbSessions,
+  isSupabaseConfigured,
+  DbPlayerSession,
+} from '../db/supabase';
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const ADMIN_PASSWORD =
+  process.env.ADMIN_PASSWORD ||
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD ||
+  'admin123';
 
 export default async function handler(req: any, res: any) {
-  if (req.method === 'GET') {
-    const { caseId } = req.query || {};
+  // Bật CORS cho các yêu cầu từ Web App
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+  );
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        let query = supabase.from('player_sessions').select('*').order('duration_seconds', { ascending: true, nullsFirst: false });
-        if (caseId && caseId !== 'all') {
-          query = query.eq('case_id', parseInt(caseId, 10));
-        }
-        const { data, error } = await query;
-        if (error) throw error;
-        return res.status(200).json({ success: true, sessions: data || [] });
-      } catch (e: any) {
-        return res.status(500).json({ error: e.message });
-      }
-    }
-
-    return res.status(200).json({ success: true, sessions: [] });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (req.method === 'POST') {
-    const { action, password } = req.body || {};
-    if (action === 'verify') {
-      if (password === ADMIN_PASSWORD) {
-        return res.status(200).json({ success: true, verified: true });
+  // 1. GET: Lấy danh sách toàn bộ phiên chơi thực tế
+  if (req.method === 'GET') {
+    try {
+      const { caseId } = req.query || {};
+
+      let sessions: DbPlayerSession[] = await getAllDbSessions();
+
+      if (caseId && caseId !== 'all') {
+        const cid = parseInt(caseId, 10);
+        sessions = sessions.filter((s) => s.case_id === cid);
       }
-      return res.status(401).json({ success: false, error: 'Mật khẩu Admin không đúng' });
+
+      return res.status(200).json({
+        success: true,
+        sessions,
+        isSupabase: isSupabaseConfigured,
+        totalCount: sessions.length,
+      });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message || 'Lỗi server' });
     }
-    return res.status(400).json({ error: 'Action không hợp lệ' });
+  }
+
+  // 2. POST: Xác thực mật khẩu hoặc dọn sạch dữ liệu
+  if (req.method === 'POST') {
+    try {
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+      const { action, password } = body;
+
+      // Xác thực Admin PIN/Password
+      if (action === 'verify') {
+        if (password === ADMIN_PASSWORD) {
+          return res.status(200).json({ success: true, verified: true });
+        }
+        return res.status(401).json({ success: false, error: 'Mật khẩu Admin không chính xác!' });
+      }
+
+      // Dọn sạch toàn bộ dữ liệu (Reset giải đấu về 0)
+      if (action === 'clear') {
+        if (password && password !== ADMIN_PASSWORD) {
+          return res.status(401).json({ success: false, error: 'Chưa được cấp quyền Admin' });
+        }
+        await clearAllDbSessions();
+        return res.status(200).json({
+          success: true,
+          message: 'Đã dọn sạch toàn bộ dữ liệu máy chủ. Bảng thi đấu đã về 0!',
+        });
+      }
+
+      return res.status(400).json({ error: 'Action không hợp lệ' });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message || 'Lỗi server' });
+    }
+  }
+
+  // 3. DELETE: Xóa toàn bộ dữ liệu phiên chơi
+  if (req.method === 'DELETE') {
+    try {
+      await clearAllDbSessions();
+      return res.status(200).json({
+        success: true,
+        message: 'Đã dọn sạch toàn bộ dữ liệu phiên chơi',
+      });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message || 'Lỗi server' });
+    }
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
