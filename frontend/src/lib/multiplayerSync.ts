@@ -16,6 +16,7 @@ const MQTT_FALLBACK_URL = 'wss://broker.hivemq.com:8884/mqtt';
 const TOPIC_TELEMETRY = 'dts/v1/telemetry';
 const TOPIC_SESSIONS = 'dts/v1/sessions';
 const TOPIC_SYNC = 'dts/v1/sync';
+const TOPIC_SYSTEM = 'dts/v1/system';
 
 export function getOrCreateDeviceId(): string {
   if (typeof window === 'undefined') return 'server_device';
@@ -35,6 +36,7 @@ class MultiplayerSyncManager {
   private telemetryListeners: Set<(event: TelemetryEvent) => void> = new Set();
   private deviceListeners: Set<(devices: ConnectedDevice[]) => void> = new Set();
   private sessionListeners: Set<(session: PlayerSession) => void> = new Set();
+  private systemResetListeners: Set<() => void> = new Set();
 
   private activeDevices: Map<string, ConnectedDevice> = new Map();
   private heartbeatTimer: NodeJS.Timeout | null = null;
@@ -58,7 +60,9 @@ class MultiplayerSyncManager {
         this.localBroadcastChannel = new BroadcastChannel(LOCAL_CHANNEL_KEY);
         this.localBroadcastChannel.onmessage = (e) => {
           if (e.data) {
-            if (e.data.__dts_telemetry) {
+            if (e.data.__dts_system_reset) {
+              this.handleIncomingSystemReset();
+            } else if (e.data.__dts_telemetry) {
               this.handleIncomingTelemetry(e.data.event);
             } else if (e.data.__dts_session) {
               this.handleIncomingSession(e.data.session);
@@ -83,7 +87,7 @@ class MultiplayerSyncManager {
 
       client.on('connect', () => {
         console.log('📡 Connected to Global Cloud Relay (EMQX WebSocket)');
-        client.subscribe([TOPIC_TELEMETRY, TOPIC_SESSIONS, TOPIC_SYNC], (err) => {
+        client.subscribe([TOPIC_TELEMETRY, TOPIC_SESSIONS, TOPIC_SYNC, TOPIC_SYSTEM], (err) => {
           if (err) console.warn('MQTT Subscribe error:', err);
         });
       });
@@ -93,7 +97,9 @@ class MultiplayerSyncManager {
           const raw = payload.toString();
           const data = JSON.parse(raw);
 
-          if (topic === TOPIC_TELEMETRY && data.id) {
+          if (topic === TOPIC_SYSTEM || data.type === 'SYSTEM_RESET') {
+            this.handleIncomingSystemReset();
+          } else if (topic === TOPIC_TELEMETRY && data.id) {
             this.handleIncomingTelemetry(data);
           } else if (topic === TOPIC_SESSIONS && data.player_name) {
             this.handleIncomingSession(data);
@@ -123,6 +129,9 @@ class MultiplayerSyncManager {
         });
 
         this.supabaseChannel
+          .on('broadcast', { event: 'system_reset' }, () => {
+            this.handleIncomingSystemReset();
+          })
           .on('broadcast', { event: 'telemetry' }, (payload: any) => {
             if (payload && payload.payload) {
               this.handleIncomingTelemetry(payload.payload);
@@ -152,6 +161,7 @@ class MultiplayerSyncManager {
     // Update active device registry
     const deviceId = event.deviceInfo || 'dev_' + event.teamCode + '_' + event.playerName;
     const existing = this.activeDevices.get(deviceId);
+    const isDisconnectEvent = event.eventType === 'USER_LEFT' || event.eventType === 'DEVICE_OFFLINE';
 
     const updatedDevice: ConnectedDevice = {
       deviceId,
@@ -161,10 +171,20 @@ class MultiplayerSyncManager {
       currentStationId: event.stationId,
       lastActive: event.timestamp || new Date().toISOString(),
       currentScore: event.totalScore ?? (existing?.currentScore ?? 0),
-      isOnline: true,
+      isOnline: !isDisconnectEvent,
     };
 
     this.activeDevices.set(deviceId, updatedDevice);
+
+    // If player left, also update any devices matching this player name
+    if (isDisconnectEvent && event.playerName) {
+      const pNameLower = event.playerName.trim().toLowerCase();
+      this.activeDevices.forEach((d) => {
+        if (d.playerName.trim().toLowerCase() === pNameLower) {
+          d.isOnline = false;
+        }
+      });
+    }
 
     // Notify telemetry subscribers
     this.telemetryListeners.forEach((l) => {
@@ -244,7 +264,7 @@ class MultiplayerSyncManager {
 
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.heartbeatTimer = setInterval(() => {
-      if (this.currentDevice) {
+      if (this.currentDevice && this.currentDevice.isOnline) {
         this.broadcastEvent({
           eventType: 'DEVICE_ONLINE',
           playerName: this.currentDevice.playerName,
@@ -255,6 +275,72 @@ class MultiplayerSyncManager {
         });
       }
     }, 12000);
+  }
+
+  // Mark the device and player as offline/left
+  public markDeviceOffline(params?: {
+    playerName?: string;
+    teamCode?: string;
+    caseId?: number | string;
+    stationId?: number;
+    score?: number;
+  }) {
+    if (typeof window === 'undefined') return;
+    const deviceId = getOrCreateDeviceId();
+
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+
+    const dev = this.activeDevices.get(deviceId) || this.currentDevice;
+    if (dev) {
+      dev.isOnline = false;
+      dev.lastActive = new Date().toISOString();
+    }
+    if (this.currentDevice) {
+      this.currentDevice.isOnline = false;
+    }
+
+    const pName = params?.playerName || dev?.playerName || '';
+    const tCode = params?.teamCode || dev?.teamCode || '';
+
+    if (pName) {
+      // Also mark all devices of this player as offline
+      const pNameLower = pName.trim().toLowerCase();
+      this.activeDevices.forEach((d) => {
+        if (d.playerName.trim().toLowerCase() === pNameLower) {
+          d.isOnline = false;
+        }
+      });
+
+      this.broadcastEvent({
+        eventType: 'USER_LEFT',
+        playerName: pName,
+        teamCode: tCode,
+        caseId: params?.caseId ?? dev?.currentCaseId ?? 0,
+        stationId: params?.stationId ?? dev?.currentStationId ?? 0,
+        totalScore: params?.score ?? dev?.currentScore ?? 0,
+      });
+    }
+
+    this.notifyDeviceSubscribers();
+  }
+
+  // Check if a player is currently online and active within 45s
+  public isPlayerOnline(playerName: string): boolean {
+    if (!playerName) return false;
+    const target = playerName.trim().toLowerCase();
+    const now = Date.now();
+    for (const dev of this.activeDevices.values()) {
+      if (dev.playerName.trim().toLowerCase() === target && dev.isOnline) {
+        const lastActiveTime = new Date(dev.lastActive).getTime();
+        if (now - lastActiveTime <= 45000) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   // Broadcast a high-speed telemetry event to ALL connected peers across the globe
@@ -390,6 +476,71 @@ class MultiplayerSyncManager {
     return () => {
       this.sessionListeners.delete(listener);
     };
+  }
+
+  // Listen to system reset and remote force logout events
+  public onSystemReset(callback: () => void): () => void {
+    this.systemResetListeners.add(callback);
+    return () => {
+      this.systemResetListeners.delete(callback);
+    };
+  }
+
+  // Handle incoming system reset from Admin
+  private handleIncomingSystemReset() {
+    console.log('🚨 SYSTEM RESET RECEIVED - Clearing all local data and forcing logout!');
+    this.activeDevices.clear();
+    this.notifyDeviceSubscribers();
+    this.systemResetListeners.forEach((cb) => {
+      try {
+        cb();
+      } catch (err) {
+        console.warn('System reset listener error:', err);
+      }
+    });
+  }
+
+  // Admin triggers global reset to clear database and force logout all player devices
+  public broadcastSystemReset() {
+    this.handleIncomingSystemReset();
+
+    // 1. MQTT
+    if (this.mqttClient && this.mqttClient.connected) {
+      try {
+        this.mqttClient.publish(
+          TOPIC_SYSTEM,
+          JSON.stringify({ type: 'SYSTEM_RESET', timestamp: Date.now() }),
+          { qos: 1 }
+        );
+      } catch (e) {
+        console.warn('MQTT system reset publish error:', e);
+      }
+    }
+
+    // 2. Local BroadcastChannel
+    if (this.localBroadcastChannel) {
+      try {
+        this.localBroadcastChannel.postMessage({
+          __dts_system_reset: true,
+          timestamp: Date.now(),
+        });
+      } catch (e) {
+        console.warn('BroadcastChannel system reset error:', e);
+      }
+    }
+
+    // 3. Supabase Realtime Broadcast
+    if (this.supabaseChannel) {
+      try {
+        this.supabaseChannel.send({
+          type: 'broadcast',
+          event: 'system_reset',
+          payload: { timestamp: Date.now() },
+        });
+      } catch (e) {
+        console.warn('Supabase Realtime system reset error:', e);
+      }
+    }
   }
 
   // Concurrency Simulation for testing 50+ devices

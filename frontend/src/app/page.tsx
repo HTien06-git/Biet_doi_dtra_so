@@ -12,17 +12,13 @@ import StationsScreen from '@/components/StationsScreen';
 import PlayingScreen from '@/components/PlayingScreen';
 import SummaryScreen from '@/components/SummaryScreen';
 import LeaderboardModal from '@/components/LeaderboardModal';
-import { Volume2, VolumeX, Trophy, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, Trophy } from 'lucide-react';
 import { sounds } from '@/lib/sounds';
 
 function GameContainer() {
   const { state } = useGame();
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(() => sounds.isEnabled());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
-
-  useEffect(() => {
-    setSoundEnabled(sounds.isEnabled());
-  }, []);
 
   const handleToggleSound = () => {
     const next = sounds.toggle();

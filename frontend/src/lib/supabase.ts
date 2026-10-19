@@ -35,6 +35,9 @@ export interface PlayerSession {
   clues_collected: number;
   stations_completed: number;
   is_completed: boolean;
+  status?: 'playing' | 'completed' | 'left' | 'offline'; // Trạng thái người chơi
+  is_active?: boolean;          // Đang trực tiếp làm bài thi hay đã rời
+  last_active?: string;         // Thời gian hoạt động gần nhất
   start_time?: string;          // ISO string
   completion_time?: string;     // ISO string
   duration_seconds?: number;    // Thời gian hoàn thành tính theo giây
@@ -54,7 +57,7 @@ export const getGlobalServerSessions = (): Map<string, PlayerSession> => {
 
 export function generateConfirmationCode(caseId?: number): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = `DTS-${caseId || 2}-`;
+  let code = `DTS-${caseId || 1}-`;
   for (let i = 0; i < 4; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -71,6 +74,7 @@ export async function savePlayerSession(session: PlayerSession): Promise<void> {
       ? generateConfirmationCode(session.case_id)
       : session.confirmation_code,
     updated_at: new Date().toISOString(),
+    last_active: session.last_active || new Date().toISOString(),
   };
 
   // 1. If running on Server: Save to Global Server Cache
@@ -83,9 +87,11 @@ export async function savePlayerSession(session: PlayerSession): Promise<void> {
   // 2. If Supabase is configured: Save to Supabase Cloud PostgreSQL
   if (isSupabaseConfigured && supabase) {
     try {
+      // Omit optional fields to remain resilient with existing database schema
+      const { status, is_active, last_active, ...cleanDbSession } = enrichedSession as any;
       const { error } = await supabase
         .from('player_sessions')
-        .upsert(enrichedSession, {
+        .upsert(cleanDbSession, {
           onConflict: 'player_name,team_code,case_id',
         });
       if (error) throw error;
@@ -105,9 +111,18 @@ export async function savePlayerSession(session: PlayerSession): Promise<void> {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(enrichedSession),
-      }).catch(() => {
-        // Ignore offline network error
-      });
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => null);
+          if (data && data.force_logout) {
+            import('./multiplayerSync').then(({ multiplayerSync }) => {
+              multiplayerSync.broadcastSystemReset();
+            });
+          }
+        })
+        .catch(() => {
+          // Ignore offline network error
+        });
     } catch {
       // Ignore
     }

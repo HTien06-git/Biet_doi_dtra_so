@@ -7,10 +7,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Award, ShieldCheck, Copy, Check, RotateCcw,
-  ChevronRight, Eye, Star, Sparkles, FileText, AlertOctagon, Download, X
+  ChevronRight, Eye, Star, FileText, AlertOctagon, Download, X
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
-import { CASES_DATA } from '@/data/casesData';
 import { sounds } from '@/lib/sounds';
 import { SolvedStamp } from '@/assets/illustrations';
 import GameIcon from './GameIcon';
@@ -31,24 +30,8 @@ export default function SummaryScreen() {
     sounds.playVictory();
   }, []);
 
-  if (!caseData || !progress) {
-    return (
-      <div className="min-h-screen bg-game-backdrop flex items-center justify-center p-4">
-        <div className="game-card p-6 text-center max-w-sm">
-          <p className="font-bold text-sm text-[#64748B] mb-4">Không tìm thấy dữ liệu vụ án.</p>
-          <button
-            onClick={() => dispatch({ type: 'SET_SCREEN', payload: 'lobby' })}
-            className="btn-game btn-game-amber text-xs px-4 py-2"
-          >
-            Trở về danh sách vụ án
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const totalScore = progress.totalScore;
-  const cluesCount = progress.cluesCollected;
+  const totalScore = progress?.totalScore || 0;
+  const cluesCount = progress?.cluesCollected || 0;
 
   const rankInfo = useMemo(() => {
     if (totalScore >= 90) {
@@ -96,6 +79,7 @@ export default function SummaryScreen() {
   }, [totalScore]);
 
   const confirmationCode = useMemo(() => {
+    if (!caseData) return '';
     const seed = `${state.playerName}-${state.teamCode}-CASE${caseData.id}-${totalScore}`;
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
@@ -104,7 +88,23 @@ export default function SummaryScreen() {
     }
     const hex = Math.abs(hash).toString(16).toUpperCase().padStart(6, '0').slice(0, 6);
     return `DTS-${caseData.id}${hex}`;
-  }, [state.playerName, state.teamCode, caseData.id, totalScore]);
+  }, [state.playerName, state.teamCode, caseData, totalScore]);
+
+  if (!caseData || !progress) {
+    return (
+      <div className="min-h-screen bg-game-backdrop flex items-center justify-center p-4">
+        <div className="game-card p-6 text-center max-w-sm">
+          <p className="font-bold text-sm text-[#64748B] mb-4">Không tìm thấy dữ liệu vụ án.</p>
+          <button
+            onClick={() => dispatch({ type: 'SET_SCREEN', payload: 'lobby' })}
+            className="btn-game btn-game-amber text-xs px-4 py-2"
+          >
+            Trở về danh sách vụ án
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleCopyCode = () => {
     sounds.playClick();

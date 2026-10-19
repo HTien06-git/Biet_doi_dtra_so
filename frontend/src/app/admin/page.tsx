@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Shield, Key, Lock, Unlock, Trophy, Users, Clock, Download, RefreshCw,
-  Search, ArrowLeft, CheckCircle2, AlertCircle, FileSpreadsheet, Trash2,
-  Sparkles, ExternalLink, Filter, Medal, Award, LogOut, Activity, Radio,
-  Zap, Cpu, Server, Wifi, Play, Square
+  Shield, Key, Unlock, Trophy, Users, Clock, Download, RefreshCw,
+  Search, ArrowLeft, CheckCircle2, AlertCircle, Trash2,
+  LogOut, Activity, Radio,
+  Zap, Server, Wifi, Square
 } from 'lucide-react';
-import { PlayerSession, getAllSessions, savePlayerSession } from '@/lib/supabase';
+import { PlayerSession, getAllSessions } from '@/lib/supabase';
 import { CASES_DATA } from '@/data/casesData';
 import { multiplayerSync } from '@/lib/multiplayerSync';
 import { TelemetryEvent, ConnectedDevice } from '@/types/case';
@@ -28,6 +28,7 @@ export default function AdminDashboardPage() {
   const [selectedCaseId, setSelectedCaseId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'in_progress'>('all');
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants' | 'telemetry'>('leaderboard');
+  const [participantViewMode, setParticipantViewMode] = useState<'unique' | 'all'>('unique');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Live Multiplayer Telemetry State (50+ Device Concurrency)
@@ -35,6 +36,57 @@ export default function AdminDashboardPage() {
   const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
   const [isSimulatingConcurrency, setIsSimulatingConcurrency] = useState<boolean>(false);
   const [stopSimRef, setStopSimRef] = useState<(() => void) | null>(null);
+  const [, setTick] = useState<number>(0);
+
+  // Auto-tick every 3 seconds to re-evaluate real-time online presence
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Helper check if an investigator is currently online and active within 45s
+  const isPlayerOnline = useCallback((playerName: string): boolean => {
+    if (!playerName) return false;
+    const target = playerName.trim().toLowerCase();
+    const now = Date.now();
+
+    const dev = connectedDevices.find(
+      (d) => d.playerName && d.playerName.trim().toLowerCase() === target
+    );
+    if (dev) {
+      if (!dev.isOnline) return false;
+      const diff = now - new Date(dev.lastActive).getTime();
+      return diff <= 45000;
+    }
+
+    if (typeof window !== 'undefined' && multiplayerSync.isPlayerOnline) {
+      return multiplayerSync.isPlayerOnline(playerName);
+    }
+
+    return false;
+  }, [connectedDevices]);
+
+  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3500);
+  }, []);
+
+  const fetchSessions = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getAllSessions();
+      setSessions((prev) => {
+        const merged = new Map<string, PlayerSession>();
+        prev.forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
+        (data || []).forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
+        return Array.from(merged.values());
+      });
+    } catch (e: unknown) {
+      console.error('Fetch sessions failed:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Check auth session
   useEffect(() => {
@@ -42,10 +94,16 @@ export default function AdminDashboardPage() {
       const auth = sessionStorage.getItem('dts_admin_auth');
       if (auth === 'true') {
         setIsAuthenticated(true);
-        fetchSessions();
       }
     }
   }, []);
+
+  // Fetch when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSessions();
+    }
+  }, [isAuthenticated, fetchSessions]);
 
   // Listen to Live Telemetry, Connected Devices & Real-time Session Sync
   useEffect(() => {
@@ -57,6 +115,26 @@ export default function AdminDashboardPage() {
 
     const unsubEvents = multiplayerSync.onTelemetry((evt) => {
       setTelemetryEvents((prev) => [evt, ...prev.slice(0, 79)]);
+
+      // Cập nhật ngay lập tức khi người chơi out hoặc ngắt kết nối
+      if (evt.eventType === 'USER_LEFT' || evt.eventType === 'DEVICE_OFFLINE') {
+        const pNameLower = evt.playerName ? evt.playerName.trim().toLowerCase() : '';
+        setConnectedDevices((prev) =>
+          prev.map((d) =>
+            d.playerName && d.playerName.trim().toLowerCase() === pNameLower
+              ? { ...d, isOnline: false }
+              : d
+          )
+        );
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.player_name && s.player_name.trim().toLowerCase() === pNameLower
+              ? { ...s, is_active: false, status: 'left' }
+              : s
+          )
+        );
+        showNotification('error', `⚠️ Điều tra viên ${evt.playerName} vừa rời trận!`);
+      }
     });
 
     // Real-Time Cross-Device Session Sync (Instantly updates when any device finishes)
@@ -94,7 +172,7 @@ export default function AdminDashboardPage() {
       unsubSessions();
       clearInterval(pollInterval);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchSessions, showNotification]);
 
   // Toggle 50+ Device Stress-Test Simulation
   const handleToggleConcurrencySimulation = () => {
@@ -109,11 +187,6 @@ export default function AdminDashboardPage() {
       setIsSimulatingConcurrency(true);
       showNotification('success', 'Đã kích hoạt mô phỏng 55 thiết bị đồng thời!');
     }
-  };
-
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3500);
   };
 
   const handleLogin = (e?: React.FormEvent) => {
@@ -135,26 +208,9 @@ export default function AdminDashboardPage() {
     setPasswordInput('');
   };
 
-  const fetchSessions = async () => {
-    setIsLoading(true);
-    try {
-      const data = await getAllSessions();
-      setSessions((prev) => {
-        const merged = new Map<string, PlayerSession>();
-        prev.forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
-        (data || []).forEach((s) => merged.set(`${s.player_name}_${s.team_code}_${s.case_id}`, s));
-        return Array.from(merged.values());
-      });
-    } catch (e: any) {
-      console.error('Fetch sessions failed:', e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Clear data (Reset giải đấu, dọn sạch bảng dữ liệu về 0)
+  // Clear data (Reset giải đấu, dọn sạch bảng dữ liệu về 0 & Tự động đăng xuất mọi thiết bị người chơi)
   const handleClearData = async () => {
-    if (confirm('Đồng chí có chắc chắn muốn xóa TOÀN BỘ dữ liệu thi đấu để chuẩn bị vòng thi đấu mới?')) {
+    if (confirm('Đồng chí có chắc chắn muốn xóa TOÀN BỘ dữ liệu thi đấu và TỰ ĐỘNG ĐĂNG XUẤT trên mọi thiết bị người chơi để chuẩn bị vòng thi đấu mới?')) {
       try {
         await fetch('/api/admin/sessions', {
           method: 'POST',
@@ -167,8 +223,12 @@ export default function AdminDashboardPage() {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('dts_player_sessions');
       }
+      // Gửi tín hiệu toàn mạng xóa sạch dữ liệu & ép đăng xuất toàn bộ thiết bị người chơi
+      multiplayerSync.broadcastSystemReset();
       setSessions([]);
-      showNotification('success', 'Đã dọn sạch toàn bộ dữ liệu. Bảng thi đấu đã về 0!');
+      setConnectedDevices([]);
+      setTelemetryEvents([]);
+      showNotification('success', 'Đã dọn sạch toàn bộ dữ liệu và tự động đăng xuất tất cả thiết bị người chơi!');
     }
   };
 
@@ -248,6 +308,58 @@ export default function AdminDashboardPage() {
     });
   }, [filteredSessions]);
 
+  // Danh Sách Điều Tra Viên Duy Nhất (Không bao giờ trùng lặp tên người chơi)
+  const uniqueParticipants = useMemo(() => {
+    const map = new Map<string, {
+      player_name: string;
+      team_code: string;
+      latest_case_id: number;
+      cases_played: number[];
+      total_score: number;
+      stations_completed: number;
+      is_completed: boolean;
+      start_time?: string;
+      last_active?: string;
+      cases_count: number;
+    }>();
+
+    filteredSessions.forEach((s) => {
+      const key = s.player_name.trim().toLowerCase();
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          player_name: s.player_name,
+          team_code: s.team_code,
+          latest_case_id: s.case_id,
+          cases_played: [s.case_id],
+          total_score: s.total_score || 0,
+          stations_completed: s.stations_completed || 0,
+          is_completed: s.is_completed || s.stations_completed === 5,
+          start_time: s.start_time,
+          last_active: s.updated_at || s.start_time,
+          cases_count: 1,
+        });
+      } else {
+        existing.cases_count += 1;
+        if (!existing.cases_played.includes(s.case_id)) {
+          existing.cases_played.push(s.case_id);
+          existing.cases_played.sort((a, b) => a - b);
+        }
+        existing.total_score = Math.max(existing.total_score, s.total_score || 0);
+        existing.stations_completed = Math.max(existing.stations_completed, s.stations_completed || 0);
+        if (s.is_completed || s.stations_completed === 5) {
+          existing.is_completed = true;
+        }
+        if (s.case_id > existing.latest_case_id || (s.updated_at && s.updated_at > (existing.last_active || ''))) {
+          existing.latest_case_id = s.case_id;
+          existing.last_active = s.updated_at;
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [filteredSessions]);
+
   // Participant Statistics (Chỉ tính dữ liệu người chơi thật)
   const stats = useMemo(() => {
     const realSessions = sessions.filter((s) => {
@@ -256,10 +368,20 @@ export default function AdminDashboardPage() {
       return true;
     });
 
-    const totalParticipants = realSessions.length;
-    const uniqueTeams = new Set(realSessions.map((s) => s.team_code)).size;
+    // 1. TỔNG NGƯỜI CHƠI: Đếm theo số lượng điều tra viên duy nhất (không trùng lặp tên)
+    const uniquePlayers = new Set(realSessions.map((s) => s.player_name.trim().toLowerCase()));
+    const totalParticipants = uniquePlayers.size;
+
+    const uniqueTeams = new Set(realSessions.map((s) => s.team_code.trim().toUpperCase())).size;
     const completedCount = realSessions.filter((s) => s.is_completed || s.stations_completed === 5).length;
-    const activeCount = realSessions.filter((s) => !s.is_completed && (s.stations_completed || 0) < 5).length;
+
+    // 2. ĐANG CHƠI: Chỉ tính những điều tra viên THỰC SỰ ĐANG ONLINE & CHƯA RỜI TRẬN
+    const activeOnlineCount = Array.from(uniquePlayers).filter((name) => {
+      const pSessions = realSessions.filter((s) => s.player_name.trim().toLowerCase() === name);
+      const isCompleted = pSessions.some((s) => s.is_completed || s.stations_completed === 5);
+      if (isCompleted) return false;
+      return isPlayerOnline(name);
+    }).length;
     
     // Find best duration record
     const completedWithDuration = realSessions.filter(
@@ -277,10 +399,10 @@ export default function AdminDashboardPage() {
       totalParticipants,
       uniqueTeams,
       completedCount,
-      activeCount,
+      activeCount: activeOnlineCount,
       bestRecord,
     };
-  }, [sessions, MOCK_TEAMS, MOCK_NAMES]);
+  }, [sessions, MOCK_TEAMS, MOCK_NAMES, isPlayerOnline]);
 
   // Export to CSV UTF-8 with BOM
   const handleExportCSV = () => {
@@ -515,14 +637,19 @@ export default function AdminDashboardPage() {
               <p className="text-2xl sm:text-3xl font-display font-black text-[#1A1AFF]">
                 {stats.totalParticipants}
               </p>
-              {stats.activeCount > 0 && (
+              {stats.activeCount > 0 ? (
                 <span className="text-xs font-bold text-[#D97706] bg-[#FEF3C7] border border-[#FDE68A] px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping inline-block" />
                   {stats.activeCount} đang chơi
                 </span>
+              ) : (
+                <span className="text-xs font-bold text-[#64748B] bg-[#F1F5F9] border border-[#CBD5E1] px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#94A3B8] inline-block" />
+                  0 đang chơi
+                </span>
               )}
             </div>
-            <p className="text-[10px] text-[#64748B] font-bold mt-0.5">Lượt đăng ký phiên thi đấu</p>
+            <p className="text-[10px] text-[#64748B] font-bold mt-0.5">Số điều tra viên đăng ký</p>
           </div>
 
           <div className="game-card p-4 bg-white border-[#1E293B]">
@@ -587,7 +714,7 @@ export default function AdminDashboardPage() {
                   : 'text-[#475569] hover:text-[#0F172A]'
               }`}
             >
-              👥 Tổng Hợp Người Tham Gia ({filteredSessions.length})
+              👥 Tổng Hợp Người Tham Gia ({uniqueParticipants.length})
             </button>
             <button
               onClick={() => setActiveTab('telemetry')}
@@ -634,10 +761,10 @@ export default function AdminDashboardPage() {
             <button
               onClick={handleClearData}
               className="p-1.5 px-3 rounded-xl bg-[#FEF2F2] border-2 border-[#FECACA] hover:bg-[#FEE2E2] text-xs font-bold text-[#DC2626] flex items-center gap-1.5 shadow-sm active:translate-y-0.5 transition-all"
-              title="Xóa toàn bộ dữ liệu để chuẩn bị vòng thi đấu mới"
+              title="Xóa toàn bộ dữ liệu & tự động đăng xuất tất cả người chơi để chuẩn bị vòng thi đấu mới"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Dọn Sạch Bảng (Reset)</span>
+              <span>Dọn Sạch Bảng & Đăng Xuất (Reset)</span>
             </button>
           </div>
         </div>
@@ -779,76 +906,189 @@ export default function AdminDashboardPage() {
         {/* ==================================================================== */}
         {activeTab === 'participants' && (
           <div className="game-card bg-white border-[#1E293B] overflow-hidden">
-            <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex items-center justify-between">
+            <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#1A1AFF]" />
-                  DANH SÁCH TẤT CẢ LƯỢT TRUY CẬP & NGƯỜI CHƠI ĐĂNG KÝ
+                  DANH SÁCH ĐIỀU TRA VIÊN & NGƯỜI CHƠI ĐĂNG KÝ
                 </h2>
                 <p className="text-[11px] font-bold text-[#64748B]">
-                  Tổng hợp thông tin điều tra viên, mã đội, thời gian bắt đầu và tiến độ
+                  Tổng hợp theo điều tra viên độc lập (không trùng tên), cập nhật tức thời trạng thái thi đấu hoặc đã rời trận
                 </p>
               </div>
 
-              <span className="game-badge game-badge-blue text-[10px] font-black">
-                {filteredSessions.length} LƯỢT ĐĂNG KÝ
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Switch view mode */}
+                <div className="bg-[#E2E8F0] p-0.5 rounded-lg flex items-center text-[10px] font-black">
+                  <button
+                    onClick={() => setParticipantViewMode('unique')}
+                    className={`px-2.5 py-1 rounded-md transition-all ${
+                      participantViewMode === 'unique'
+                        ? 'bg-[#1A1AFF] text-white shadow-sm'
+                        : 'text-[#475569] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    👤 Thí Sinh Duy Nhất ({uniqueParticipants.length})
+                  </button>
+                  <button
+                    onClick={() => setParticipantViewMode('all')}
+                    className={`px-2.5 py-1 rounded-md transition-all ${
+                      participantViewMode === 'all'
+                        ? 'bg-[#1A1AFF] text-white shadow-sm'
+                        : 'text-[#475569] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    📋 Từng Lượt Vụ Án ({filteredSessions.length})
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {filteredSessions.length === 0 ? (
-              <div className="p-12 text-center space-y-2">
-                <p className="font-bold text-sm text-[#64748B]">Không tìm thấy người chơi nào khớp với bộ lọc.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-[#1E293B] text-white font-display font-black uppercase text-[11px] tracking-wider">
-                      <th className="py-3 px-3 text-center w-12">STT</th>
-                      <th className="py-3 px-4">Tên Điều Tra Viên</th>
-                      <th className="py-3 px-3">Mã Đội</th>
-                      <th className="py-3 px-3">Vụ Án</th>
-                      <th className="py-3 px-4">Thời Gian Bắt Đầu</th>
-                      <th className="py-3 px-3 text-center">Tiến Độ (x/5)</th>
-                      <th className="py-3 px-3 text-center">Tổng Điểm</th>
-                      <th className="py-3 px-3 text-center">Trạng Thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
-                    {filteredSessions.map((session, idx) => (
-                      <tr key={`${session.player_name}-${session.team_code}-${idx}`} className="hover:bg-[#F8FAFC]">
-                        <td className="py-3 px-3 text-center font-bold text-[#64748B]">{idx + 1}</td>
-                        <td className="py-3 px-4 font-bold text-[#0F172A]">{session.player_name}</td>
-                        <td className="py-3 px-3">
-                          <span className="inline-block px-2 py-0.5 rounded bg-[#EFF6FF] text-[#1E40AF] font-mono font-bold text-[11px]">
-                            {session.team_code}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 font-medium text-[#475569]">Vụ #{session.case_id}</td>
-                        <td className="py-3 px-4 font-medium text-[#475569]">{formatDateTime(session.start_time)}</td>
-                        <td className="py-3 px-3 text-center">
-                          <span className="font-bold text-xs">{session.stations_completed || 0}/5 Trạm</span>
-                        </td>
-                        <td className="py-3 px-3 text-center font-display font-black text-[#059669]">
-                          {session.total_score || 0}đ
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          {session.is_completed || session.stations_completed === 5 ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[10px] font-black uppercase">
-                              ✓ ĐÃ PHÁ ÁN ({session.total_score}đ)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] border border-[#D97706] text-[#92400E] text-[10px] font-black uppercase shadow-sm">
-                              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping inline-block" />
-                              ĐANG THI ĐẤU (Trạm {Math.min(5, (session.stations_completed || 0) + 1)}/5)
-                            </span>
-                          )}
-                        </td>
+            {participantViewMode === 'unique' ? (
+              uniqueParticipants.length === 0 ? (
+                <div className="p-12 text-center space-y-2">
+                  <p className="font-bold text-sm text-[#64748B]">Không tìm thấy điều tra viên nào khớp với bộ lọc.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#1E293B] text-white font-display font-black uppercase text-[11px] tracking-wider">
+                        <th className="py-3 px-3 text-center w-12">STT</th>
+                        <th className="py-3 px-4">Tên Điều Tra Viên</th>
+                        <th className="py-3 px-3">Mã Đội</th>
+                        <th className="py-3 px-3">Các Vụ Án Đã Tham Gia</th>
+                        <th className="py-3 px-4">Thời Gian Bắt Đầu</th>
+                        <th className="py-3 px-3 text-center">Tiến Độ (x/5)</th>
+                        <th className="py-3 px-3 text-center">Tổng Điểm</th>
+                        <th className="py-3 px-3 text-center">Trạng Thái</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
+                      {uniqueParticipants.map((p, idx) => {
+                        const isOnline = isPlayerOnline(p.player_name);
+                        return (
+                          <tr key={`${p.player_name}-${idx}`} className="hover:bg-[#F8FAFC]">
+                            <td className="py-3 px-3 text-center font-bold text-[#64748B]">{idx + 1}</td>
+                            <td className="py-3 px-4 font-bold text-[#0F172A]">
+                              <div className="flex items-center gap-1.5">
+                                <span>{p.player_name}</span>
+                                {p.cases_count > 1 && (
+                                  <span className="text-[10px] bg-[#EFF6FF] text-[#2563EB] px-1.5 py-0.5 rounded font-mono font-bold">
+                                    {p.cases_count} phiên
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className="inline-block px-2 py-0.5 rounded bg-[#EFF6FF] text-[#1E40AF] font-mono font-bold text-[11px]">
+                                {p.team_code}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {p.cases_played.map((cid) => (
+                                  <span key={cid} className="px-1.5 py-0.5 rounded bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-display font-black text-[10px]">
+                                    Vụ #{cid}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-medium text-[#475569]">{formatDateTime(p.start_time)}</td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="font-bold text-xs">{p.stations_completed || 0}/5 Trạm</span>
+                            </td>
+                            <td className="py-3 px-3 text-center font-display font-black text-[#059669]">
+                              {p.total_score || 0}đ
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              {p.is_completed || p.stations_completed === 5 ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[10px] font-black uppercase">
+                                  ✓ ĐÃ PHÁ ÁN ({p.total_score}đ)
+                                </span>
+                              ) : isOnline ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] border border-[#D97706] text-[#92400E] text-[10px] font-black uppercase shadow-sm">
+                                  <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping inline-block" />
+                                  ĐANG THI ĐẤU (Trạm {Math.min(5, (p.stations_completed || 0) + 1)}/5)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F9] border border-[#94A3B8] text-[#475569] text-[10px] font-black uppercase shadow-sm">
+                                  <span className="w-2 h-2 rounded-full bg-[#94A3B8] inline-block" />
+                                  ĐÃ RỜI TRẬN (Dừng ở Trạm {Math.min(5, (p.stations_completed || 0) + 1)}/5)
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : (
+              filteredSessions.length === 0 ? (
+                <div className="p-12 text-center space-y-2">
+                  <p className="font-bold text-sm text-[#64748B]">Không tìm thấy người chơi nào khớp với bộ lọc.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#1E293B] text-white font-display font-black uppercase text-[11px] tracking-wider">
+                        <th className="py-3 px-3 text-center w-12">STT</th>
+                        <th className="py-3 px-4">Tên Điều Tra Viên</th>
+                        <th className="py-3 px-3">Mã Đội</th>
+                        <th className="py-3 px-3">Vụ Án</th>
+                        <th className="py-3 px-4">Thời Gian Bắt Đầu</th>
+                        <th className="py-3 px-3 text-center">Tiến Độ (x/5)</th>
+                        <th className="py-3 px-3 text-center">Tổng Điểm</th>
+                        <th className="py-3 px-3 text-center">Trạng Thái</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
+                      {filteredSessions.map((session, idx) => {
+                        const isOnline = isPlayerOnline(session.player_name);
+                        return (
+                          <tr key={`${session.player_name}-${session.team_code}-${idx}`} className="hover:bg-[#F8FAFC]">
+                            <td className="py-3 px-3 text-center font-bold text-[#64748B]">{idx + 1}</td>
+                            <td className="py-3 px-4 font-bold text-[#0F172A]">{session.player_name}</td>
+                            <td className="py-3 px-3">
+                              <span className="inline-block px-2 py-0.5 rounded bg-[#EFF6FF] text-[#1E40AF] font-mono font-bold text-[11px]">
+                                {session.team_code}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 font-medium text-[#475569]">Vụ #{session.case_id}</td>
+                            <td className="py-3 px-4 font-medium text-[#475569]">{formatDateTime(session.start_time)}</td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="font-bold text-xs">{session.stations_completed || 0}/5 Trạm</span>
+                            </td>
+                            <td className="py-3 px-3 text-center font-display font-black text-[#059669]">
+                              {session.total_score || 0}đ
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              {session.is_completed || session.stations_completed === 5 ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[10px] font-black uppercase">
+                                  ✓ ĐÃ PHÁ ÁN ({session.total_score}đ)
+                                </span>
+                              ) : isOnline ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FEF3C7] border border-[#D97706] text-[#92400E] text-[10px] font-black uppercase shadow-sm">
+                                  <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping inline-block" />
+                                  ĐANG THI ĐẤU (Trạm {Math.min(5, (session.stations_completed || 0) + 1)}/5)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F1F5F9] border border-[#94A3B8] text-[#475569] text-[10px] font-black uppercase shadow-sm">
+                                  <span className="w-2 h-2 rounded-full bg-[#94A3B8] inline-block" />
+                                  ĐÃ RỜI TRẬN (Dừng ở Trạm {Math.min(5, (session.stations_completed || 0) + 1)}/5)
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
             )}
           </div>
         )}

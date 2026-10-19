@@ -3,9 +3,9 @@
 // ============================================================================
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Sparkles, User, Users, ShieldAlert, Shield, Settings } from 'lucide-react';
+import { Sparkles, User, Users, ShieldAlert, Settings, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
@@ -15,44 +15,96 @@ import { multiplayerSync } from '@/lib/multiplayerSync';
 
 export default function WelcomeScreen() {
   const { dispatch } = useGame();
-  const [playerName, setPlayerName] = useState('');
-  const [teamCode, setTeamCode] = useState('');
+  const [playerName, setPlayerName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('dts_game_state');
+        if (saved) return JSON.parse(saved).playerName || '';
+      } catch {}
+    }
+    return '';
+  });
+
+  const [teamCode, setTeamCode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('dts_game_state');
+        if (saved) return JSON.parse(saved).teamCode || '';
+      } catch {}
+    }
+    return '';
+  });
+
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dts_game_state');
-      if (saved) {
-        try {
-          const data = JSON.parse(saved);
-          if (data.playerName) setPlayerName(data.playerName);
-          if (data.teamCode) setTeamCode(data.teamCode);
-        } catch {}
-      }
-    }
-  }, []);
+  const handleStart = async () => {
+    const trimmedName = playerName.trim();
+    const trimmedTeam = teamCode.trim();
 
-  const handleStart = () => {
-    if (!playerName.trim()) {
+    if (!trimmedName) {
       sounds.playWrong();
       setError('Vui lòng nhập tên điều tra viên!');
       return;
     }
-    if (!teamCode.trim()) {
+    if (!trimmedTeam) {
       sounds.playWrong();
       setError('Vui lòng nhập mã số đội thi đấu!');
       return;
     }
+
     sounds.playClick();
     setError('');
     setIsLoading(true);
 
+    // Kiểm tra xem tên này có phải của chính người chơi trên thiết bị này hay không
+    let isSelf = false;
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('dts_game_state');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.playerName && parsed.playerName.trim().toLowerCase() === trimmedName.toLowerCase()) {
+            isSelf = true;
+          }
+        }
+      } catch {}
+    }
+
+    // Nếu không phải người chơi cũ trên thiết bị này, kiểm tra trùng tên trên toàn hệ thống
+    if (!isSelf) {
+      try {
+        const res = await fetch(`/api/check-name?name=${encodeURIComponent(trimmedName)}`, {
+          cache: 'no-store',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.available === false) {
+            sounds.playWrong();
+            setError(data.error || `Tên "${trimmedName}" đã có người đăng ký! Quy định giải đấu không được đặt tên trùng nhau, vui lòng chọn tên khác.`);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Check name API error:', err);
+      }
+    }
+
+    // Đăng ký thiết bị và gửi thông báo tham gia
+    multiplayerSync.registerDevice({
+      playerName: trimmedName,
+      teamCode: trimmedTeam,
+      caseId: 0,
+      stationId: 0,
+      score: 0,
+    });
+
     // Broadcast live event to Admin immediately
     multiplayerSync.broadcastEvent({
       eventType: 'USER_JOINED',
-      playerName: playerName.trim(),
-      teamCode: teamCode.trim(),
+      playerName: trimmedName,
+      teamCode: trimmedTeam,
       caseId: 0,
       stationId: 0,
       totalScore: 0,
@@ -61,7 +113,7 @@ export default function WelcomeScreen() {
     setTimeout(() => {
       dispatch({
         type: 'SET_PLAYER',
-        payload: { name: playerName.trim(), code: teamCode.trim() },
+        payload: { name: trimmedName, code: trimmedTeam },
       });
     }, 450);
   };

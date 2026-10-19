@@ -32,7 +32,7 @@ export interface Station {
 
 export interface CaseData {
   id: number;
-  caseNumber: string;         // "02", "03", "04", "05"
+  caseNumber: string;         // "01", "02", "03", "04"
   title: string;
   subtitle: string;
   description: string;
@@ -56,11 +56,11 @@ export const GAME_CONFIG = {
 
 export const CASES_DATA: CaseData[] = [
   // ========================================================================
-  // VỤ ÁN 02: CUỘC GỌI TỰ XƯNG CÔNG AN
+  // VỤ ÁN 01: CUỘC GỌI TỰ XƯNG CÔNG AN
   // ========================================================================
   {
-    id: 2,
-    caseNumber: "02",
+    id: 1,
+    caseNumber: "01",
     title: "Cuộc gọi tự xưng công an",
     subtitle: "Nhận diện cuộc gọi giả mạo",
     description: "Nhận diện cuộc gọi giả mạo, kiểm tra giấy triệu tập, bảo toàn chứng cứ số và xử lý an toàn.",
@@ -220,11 +220,11 @@ export const CASES_DATA: CaseData[] = [
   },
 
   // ========================================================================
-  // VỤ ÁN 03: BỨC ẢNH RIÊNG TƯ LAN TRUYỀN
+  // VỤ ÁN 02: BỨC ẢNH RIÊNG TƯ LAN TRUYỀN
   // ========================================================================
   {
-    id: 3,
-    caseNumber: "03",
+    id: 2,
+    caseNumber: "02",
     title: "Bức ảnh riêng tư lan truyền",
     subtitle: "Bảo vệ quyền riêng tư trực tuyến",
     description: "Bảo vệ quyền riêng tư, thu thập chứng cứ hợp pháp và không quy trách nhiệm khi chưa đủ căn cứ.",
@@ -379,11 +379,11 @@ export const CASES_DATA: CaseData[] = [
   },
 
   // ========================================================================
-  // VỤ ÁN 04: BẪY CỘNG TÁC VIÊN CHỐT ĐƠN
+  // VỤ ÁN 03: BẪY CỘNG TÁC VIÊN CHỐT ĐƠN
   // ========================================================================
   {
-    id: 4,
-    caseNumber: "04",
+    id: 3,
+    caseNumber: "03",
     title: "Bẫy cộng tác viên chốt đơn",
     subtitle: "Nhận diện lừa đảo việc làm online",
     description: "Nhận diện yêu cầu ứng tiền bất thường và truy vết giao dịch trong bẫy tuyển cộng tác viên.",
@@ -538,11 +538,11 @@ export const CASES_DATA: CaseData[] = [
   },
 
   // ========================================================================
-  // VỤ ÁN 05: ỨNG DỤNG ĐẦU TƯ SINH LỜI MỖI NGÀY
+  // VỤ ÁN 04: ỨNG DỤNG ĐẦU TƯ SINH LỜI MỖI NGÀY
   // ========================================================================
   {
-    id: 5,
-    caseNumber: "05",
+    id: 4,
+    caseNumber: "04",
     title: "Ứng dụng đầu tư sinh lời mỗi ngày",
     subtitle: "Phân biệt số dư ảo và tiền thật",
     description: "Phân biệt số dư hiển thị trên ứng dụng lừa đảo với tiền thật có thể rút.",

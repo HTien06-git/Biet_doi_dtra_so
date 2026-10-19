@@ -3,7 +3,7 @@
 // ============================================================================
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   FileText, Star, Search, RotateCcw, LogOut, ChevronRight, Trophy, Puzzle, Shield,
@@ -23,6 +23,53 @@ export default function LobbyScreen() {
   const { state, dispatch } = useGame();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
+  const totalScore = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.totalScore, 0);
+  const totalClues = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.cluesCollected, 0);
+  const completedCases = Object.values(state.caseProgress).filter((cp) => cp.isCompleted).length;
+
+  // Cập nhật hiện diện trực tuyến khi vào Lobby và xử lý khi người chơi tắt trình duyệt
+  useEffect(() => {
+    if (!state.playerName) return;
+
+    multiplayerSync.registerDevice({
+      playerName: state.playerName,
+      teamCode: state.teamCode,
+      caseId: 0,
+      stationId: 0,
+      score: totalScore,
+    });
+
+    const handleBeforeUnload = () => {
+      multiplayerSync.markDeviceOffline({
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: 0,
+        stationId: 0,
+        score: totalScore,
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(
+          '/api/sessions',
+          JSON.stringify({
+            action: 'leave',
+            player_name: state.playerName,
+            team_code: state.teamCode,
+            is_active: false,
+            status: 'left',
+          })
+        );
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+    };
+  }, [state.playerName, state.teamCode, totalScore]);
+
   const handleSelectCase = (caseId: number) => {
     sounds.playClick();
     
@@ -36,6 +83,8 @@ export default function LobbyScreen() {
       clues_collected: 0,
       stations_completed: 0,
       is_completed: false,
+      is_active: true,
+      status: 'playing',
       start_time: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -63,20 +112,45 @@ export default function LobbyScreen() {
 
   const handleLogout = () => {
     sounds.playClick();
+
+    // Thông báo cho hệ thống là user đã out không chơi nữa
+    multiplayerSync.markDeviceOffline({
+      playerName: state.playerName,
+      teamCode: state.teamCode,
+      caseId: 0,
+      stationId: 0,
+      score: totalScore,
+    });
+
+    try {
+      fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'leave',
+          player_name: state.playerName,
+          team_code: state.teamCode,
+          is_active: false,
+          status: 'left',
+        }),
+      }).catch(() => {});
+    } catch {}
+
     dispatch({ type: 'LOGOUT' });
   };
 
-  const totalScore = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.totalScore, 0);
-  const totalClues = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.cluesCollected, 0);
-  const completedCases = Object.values(state.caseProgress).filter((cp) => cp.isCompleted).length;
-
   const getCaseIconType = (caseId: number): GameIconType => {
     switch (caseId) {
-      case 2: return 'phone';
-      case 3: return 'alert';
-      case 4: return 'shopping';
-      case 5: return 'trending';
-      default: return 'folder';
+      case 1:
+      case 2:
+        return caseId === 1 ? 'phone' : 'alert';
+      case 3:
+        return 'shopping';
+      case 4:
+      case 5:
+        return 'trending';
+      default:
+        return 'folder';
     }
   };
 

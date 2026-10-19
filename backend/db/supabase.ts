@@ -34,6 +34,9 @@ export interface DbPlayerSession {
   clues_collected: number;
   stations_completed: number;
   is_completed: boolean;
+  status?: string;
+  is_active?: boolean;
+  last_active?: string;
   start_time?: string | null;
   completion_time?: string | null;
   duration_seconds?: number | null;
@@ -72,6 +75,7 @@ export async function upsertSession(session: DbPlayerSession): Promise<DbPlayerS
       ? generateBtcCode(session.case_id, session.player_name, session.team_code)
       : session.confirmation_code,
     updated_at: new Date().toISOString(),
+    last_active: session.last_active || new Date().toISOString(),
   };
 
   const key = `${withCode.player_name}_${withCode.team_code}_${withCode.case_id}`;
@@ -80,9 +84,10 @@ export async function upsertSession(session: DbPlayerSession): Promise<DbPlayerS
 
   if (isSupabaseConfigured && supabase) {
     try {
+      const { status, is_active, last_active, ...cleanDbSession } = withCode as any;
       const { data, error } = await supabase
         .from('player_sessions')
-        .upsert(withCode, { onConflict: 'player_name,team_code,case_id' })
+        .upsert(cleanDbSession, { onConflict: 'player_name,team_code,case_id' })
         .select()
         .single();
       if (!error && data) {

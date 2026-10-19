@@ -57,11 +57,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Mật khẩu Admin không chính xác!' }, { status: 401 });
     }
 
-    // Clear All Sessions (Dọn sạch để chuẩn bị giải đấu mới)
+      // Clear All Sessions (Dọn sạch để chuẩn bị giải đấu mới)
     if (action === 'clear') {
       if (password && password !== ADMIN_PASSWORD) {
         return NextResponse.json({ success: false, error: 'Chưa được cấp quyền Admin' }, { status: 401 });
       }
+
+      (globalThis as any).__DTS_SYSTEM_RESET_AT__ = Date.now();
 
       const serverMap = getGlobalServerSessions();
       serverMap.clear();
@@ -74,7 +76,7 @@ export async function POST(req: Request) {
         }
       }
 
-      return NextResponse.json({ success: true, message: 'Đã dọn sạch toàn bộ dữ liệu máy chủ!' });
+      return NextResponse.json({ success: true, message: 'Đã dọn sạch toàn bộ dữ liệu máy chủ!', resetAt: (globalThis as any).__DTS_SYSTEM_RESET_AT__ });
     }
 
     return NextResponse.json({ error: 'Action không hợp lệ' }, { status: 400 });

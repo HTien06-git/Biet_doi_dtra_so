@@ -91,7 +91,7 @@ export function VictimIllustration({ className = "w-40 h-40" }: { className?: st
 // 3. Khung cảnh căn phòng hiện trường 2D Case Hunter hoàn chỉnh (2D Room Stage)
 export function CaseHunterRoomStage({
   caseId,
-  stationIndex,
+  stationIndex: _stationIndex,
   onInspectItem,
 }: {
   caseId: number;
@@ -140,7 +140,7 @@ export function CaseHunterRoomStage({
           className="relative group p-1 bg-white border-2 border-[#4A2C11] rounded-lg shadow-sm hover:scale-110 active:scale-95 transition-all"
           title="Bấm để soi bằng chứng khả nghi!"
         >
-          {caseId === 2 ? (
+          {(caseId === 1 || caseId === 2) ? (
             <div className="w-10 h-7 bg-[#1E293B] rounded flex items-center justify-center text-[10px] text-white font-bold animate-pulse">
               📞 SOS
             </div>
@@ -175,7 +175,7 @@ export function CaseHunterRoomStage({
       <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none">
         {/* Bong bóng suy nghĩ (Thought Bubble) */}
         <div className="bg-white border-2 border-[#4A2C11] rounded-xl px-2.5 py-1 text-[11px] font-black text-[#8D230F] shadow-sm mb-1 animate-bounce">
-          💭 "Công an thật hay lừa đảo?!"
+          💭 &quot;Công an thật hay lừa đảo?!&quot;
         </div>
         <VictimIllustration className="w-24 h-24 sm:w-28 sm:h-28" />
       </div>

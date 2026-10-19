@@ -6,6 +6,7 @@
 import { createContext, useContext, useReducer, useCallback, useEffect, ReactNode } from 'react';
 import { CASES_DATA, GAME_CONFIG, CaseData, Station } from '@/data/casesData';
 import { savePlayerSession, loadPlayerSessions, PlayerSession } from '@/lib/supabase';
+import { multiplayerSync } from '@/lib/multiplayerSync';
 
 // ============================================================================
 // Types
@@ -359,6 +360,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case 'LOGOUT':
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('dts_game_state');
+        localStorage.removeItem('dts_player_sessions');
+      }
       return { ...initialState, caseProgress: initCaseProgress() };
 
     default:
@@ -515,6 +520,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }));
     }
   }, [state.isLoggedIn, state.playerName, state.teamCode, state.caseProgress]);
+
+  // Listen to Admin Global System Reset & Remote Force Logout
+  useEffect(() => {
+    const unsub = multiplayerSync.onSystemReset(() => {
+      console.log('🚨 Received Admin System Reset – Clearing game state & logging out');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('dts_game_state');
+        localStorage.removeItem('dts_player_sessions');
+      }
+      dispatch({ type: 'LOGOUT' });
+      alert('⚠️ Ban Quản Trị đã dọn sạch toàn bộ dữ liệu giải đấu. Thiết bị của bạn đã được tự động đăng xuất để chuẩn bị cho lượt đấu mới!');
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <GameContext.Provider

@@ -7,14 +7,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Search, Eye, X, ChevronRight, CheckCircle, XCircle,
-  Lightbulb, Star, Sparkles, MessageSquare, FileSearch, CreditCard,
-  Camera, Clock, ShieldCheck, AlertTriangle, Volume2, VolumeX, Trophy, Users
+  ArrowLeft, Search, X, ChevronRight,
+  Lightbulb, Sparkles, MessageSquare, FileSearch, CreditCard,
+  Camera, Clock, CheckCircle, XCircle, AlertTriangle, Star
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
-import { Station } from '@/data/casesData';
 import { sounds } from '@/lib/sounds';
-import GameIcon from './GameIcon';
 import StationCanvas from '@/components/game/StationCanvas';
 import { multiplayerSync } from '@/lib/multiplayerSync';
 import AudioController from '@/components/ui/AudioController';
@@ -36,12 +34,7 @@ export default function PlayingScreen() {
   const [showEvidence, setShowEvidence] = useState(false);
   const [selectedEvidenceIndex, setSelectedEvidenceIndex] = useState<number | null>(null);
   const [showWrongFeedback, setShowWrongFeedback] = useState(false);
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
   const [wrongCountdown, setWrongCountdown] = useState<number>(3);
-
-  useEffect(() => {
-    setIsSoundEnabled(sounds.isEnabled());
-  }, []);
 
   const currentTotalScore = progress?.totalScore || 0;
 
@@ -64,14 +57,77 @@ export default function PlayingScreen() {
         stationId: state.currentStationIndex + 1,
         totalScore: currentTotalScore,
       });
+
+      const handleBeforeUnload = () => {
+        multiplayerSync.markDeviceOffline({
+          playerName: state.playerName,
+          teamCode: state.teamCode,
+          caseId: caseData.id,
+          stationId: state.currentStationIndex + 1,
+          score: currentTotalScore,
+        });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(
+            '/api/sessions',
+            JSON.stringify({
+              action: 'leave',
+              player_name: state.playerName,
+              team_code: state.teamCode,
+              case_id: caseData.id,
+              is_active: false,
+              status: 'left',
+            })
+          );
+        }
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('pagehide', handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        window.removeEventListener('pagehide', handleBeforeUnload);
+      };
     }
   }, [caseData?.id, state.currentStationIndex, state.playerName, state.teamCode, currentTotalScore]);
 
-  const toggleSound = () => {
-    const next = sounds.toggle();
-    setIsSoundEnabled(next);
-    if (next) sounds.playClick();
+  const handleNextStation = () => {
+    sounds.playClick();
+    setShowWrongFeedback(false);
+    if (caseData) {
+      multiplayerSync.broadcastEvent({
+        eventType: 'STATION_COMPLETED',
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: state.currentStationIndex + 1,
+        totalScore: currentTotalScore,
+      });
+    }
+    dispatch({ type: 'NEXT_STATION' });
+    setTimeout(() => {
+      saveProgress();
+    }, 120);
   };
+
+  // Tự động chuyển câu sau 3 giây khi trả lời sai
+  useEffect(() => {
+    if (state.showResultDialog && state.resultDialogType === 'wrong') {
+      const timer = setInterval(() => {
+        setWrongCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleNextStation();
+            return 3;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    } else {
+      setWrongCountdown(3);
+    }
+  }, [state.showResultDialog, state.resultDialogType, state.currentStationIndex]);
 
   if (!caseData || !station || !progress) return null;
 
@@ -94,41 +150,6 @@ export default function PlayingScreen() {
       dispatch({ type: 'SELECT_ANSWER', payload: answerId });
     }
   };
-
-  const handleNextStation = () => {
-    sounds.playClick();
-    setShowWrongFeedback(false);
-    multiplayerSync.broadcastEvent({
-      eventType: 'STATION_COMPLETED',
-      playerName: state.playerName,
-      teamCode: state.teamCode,
-      caseId: caseData.id,
-      stationId: state.currentStationIndex + 1,
-      totalScore: currentTotalScore,
-    });
-    dispatch({ type: 'NEXT_STATION' });
-    setTimeout(() => {
-      saveProgress();
-    }, 120);
-  };
-
-  // Tự động chuyển câu sau 3 giây khi trả lời sai
-  useEffect(() => {
-    if (state.showResultDialog && state.resultDialogType === 'wrong') {
-      setWrongCountdown(3);
-      const timer = setInterval(() => {
-        setWrongCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            handleNextStation();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [state.showResultDialog, state.resultDialogType, state.currentStationIndex]);
 
   const handleCheckAnswer = () => {
     if (state.selectedAnswers.length === 0) return;

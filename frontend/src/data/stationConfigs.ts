@@ -5,10 +5,10 @@ import { StationConfig } from '@/types/case';
 
 export const STATION_CONFIGS: Record<string, StationConfig> = {
   // ==========================================================================
-  // CASE 02: CUỘC GỌI TỰ XƯNG CÔNG AN (5 TRẠM)
+  // CASE 01: CUỘC GỌI TỰ XƯNG CÔNG AN (5 TRẠM)
   // ==========================================================================
-  'case_02_1': {
-    caseId: 'case_02',
+  'case_01_1': {
+    caseId: 'case_01',
     stationId: 1,
     title: 'Truy tìm cuộc gọi lạ',
     victimName: 'Minh (Sinh viên KTX)',
@@ -79,8 +79,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_02_2': {
-    caseId: 'case_02',
+  'case_01_2': {
+    caseId: 'case_01',
     stationId: 2,
     title: 'Kiểm tra giấy triệu tập giả mạo',
     victimName: 'Minh',
@@ -131,8 +131,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_02_3': {
-    caseId: 'case_02',
+  'case_01_3': {
+    caseId: 'case_01',
     stationId: 3,
     title: 'Giải mã tài khoản tạm giữ',
     victimName: 'Minh',
@@ -187,8 +187,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_02_4': {
-    caseId: 'case_02',
+  'case_01_4': {
+    caseId: 'case_01',
     stationId: 4,
     title: 'Bảo toàn chứng cứ số',
     victimName: 'Minh',
@@ -234,8 +234,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_02_5': {
-    caseId: 'case_02',
+  'case_01_5': {
+    caseId: 'case_01',
     stationId: 5,
     title: 'Hành động an toàn & Trình báo',
     victimName: 'Minh',
@@ -268,10 +268,10 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
   },
 
   // ==========================================================================
-  // CASE 03: BẪY TUYỂN DỤNG "VIỆC NHẸ LƯƠNG CAO" (5 TRẠM)
+  // CASE 02: BẪY TUYỂN DỤNG "VIỆC NHẸ LƯƠNG CAO" (5 TRẠM)
   // ==========================================================================
-  'case_03_1': {
-    caseId: 'case_03',
+  'case_02_1': {
+    caseId: 'case_02',
     stationId: 1,
     title: 'Lời mời việc làm béo bở',
     victimName: 'Lan (Mẹ bỉm sữa / Sinh viên làm thêm)',
@@ -317,8 +317,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_03_2': {
-    caseId: 'case_03',
+  'case_02_2': {
+    caseId: 'case_02',
     stationId: 2,
     title: 'Miếng mồi câu đầu tiên',
     victimName: 'Lan',
@@ -349,8 +349,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_03_3': {
-    caseId: 'case_03',
+  'case_02_3': {
+    caseId: 'case_02',
     stationId: 3,
     title: 'Bẫy nạp tiền nhiệm vụ VIP',
     victimName: 'Lan',
@@ -381,8 +381,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_03_4': {
-    caseId: 'case_03',
+  'case_02_4': {
+    caseId: 'case_02',
     stationId: 4,
     title: 'Phát hiện ứng dụng độc hại APK',
     victimName: 'Lan',
@@ -413,8 +413,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_03_5': {
-    caseId: 'case_03',
+  'case_02_5': {
+    caseId: 'case_02',
     stationId: 5,
     title: 'Cắt lỗ & Xử lý sự cố',
     victimName: 'Lan',
@@ -447,10 +447,10 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
   },
 
   // ==========================================================================
-  // CASE 04: GIAN LẬN SÀN THƯƠNG MẠI ĐIỆN TỬ & HOÀN TIỀN (5 TRẠM)
+  // CASE 03: GIAN LẬN SÀN THƯƠNG MẠI ĐIỆN TỬ & HOÀN TIỀN (5 TRẠM)
   // ==========================================================================
-  'case_04_1': {
-    caseId: 'case_04',
+  'case_03_1': {
+    caseId: 'case_03',
     stationId: 1,
     title: 'Cuộc gọi thông báo trúng thưởng',
     victimName: 'Bác Hùng (Cán bộ hưu trí)',
@@ -481,8 +481,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_04_2': {
-    caseId: 'case_04',
+  'case_03_2': {
+    caseId: 'case_03',
     stationId: 2,
     title: 'Bẫy đường link nhận tiền hoàn',
     victimName: 'Bác Hùng',
@@ -513,8 +513,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_04_3': {
-    caseId: 'case_04',
+  'case_03_3': {
+    caseId: 'case_03',
     stationId: 3,
     title: 'Đánh cắp mã OTP giao dịch',
     victimName: 'Bác Hùng',
@@ -545,8 +545,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_04_4': {
-    caseId: 'case_04',
+  'case_03_4': {
+    caseId: 'case_03',
     stationId: 4,
     title: 'Truy vết dòng tiền tẩu tán',
     victimName: 'Bác Hùng',
@@ -577,8 +577,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_04_5': {
-    caseId: 'case_04',
+  'case_03_5': {
+    caseId: 'case_03',
     stationId: 5,
     title: 'Khiếu nại ngân hàng & Khóa thẻ',
     victimName: 'Bác Hùng',
@@ -610,10 +610,10 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
   },
 
   // ==========================================================================
-  // CASE 05: BẪY SÀN ĐẦU TƯ TÀI CHÍNH / TIỀN ẢO (5 TRẠM)
+  // CASE 04: BẪY SÀN ĐẦU TƯ TÀI CHÍNH / TIỀN ẢO (5 TRẠM)
   // ==========================================================================
-  'case_05_1': {
-    caseId: 'case_05',
+  'case_04_1': {
+    caseId: 'case_04',
     stationId: 1,
     title: 'Nhóm chuyên gia đọc lệnh',
     victimName: 'Tuấn (Nhà đầu tư cá nhân F0)',
@@ -644,8 +644,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_05_2': {
-    caseId: 'case_05',
+  'case_04_2': {
+    caseId: 'case_04',
     stationId: 2,
     title: 'Sàn giao dịch nhái quốc tế',
     victimName: 'Tuấn',
@@ -676,8 +676,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_05_3': {
-    caseId: 'case_05',
+  'case_04_3': {
+    caseId: 'case_04',
     stationId: 3,
     title: 'Bẫy kẹt lệnh rút tiền',
     victimName: 'Tuấn',
@@ -708,8 +708,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_05_4': {
-    caseId: 'case_05',
+  'case_04_4': {
+    caseId: 'case_04',
     stationId: 4,
     title: 'Sập web & Xóa nhóm phi tang',
     victimName: 'Tuấn',
@@ -740,8 +740,8 @@ export const STATION_CONFIGS: Record<string, StationConfig> = {
     ]
   },
 
-  'case_05_5': {
-    caseId: 'case_05',
+  'case_04_5': {
+    caseId: 'case_04',
     stationId: 5,
     title: 'Bài học đầu tư & Báo cáo A05',
     victimName: 'Tuấn',
@@ -787,6 +787,12 @@ export function getStationConfig(caseIdOrNumber: number | string, stationIndexOr
 
   if (STATION_CONFIGS[key]) {
     return STATION_CONFIGS[key];
+  }
+
+  // Fallback for legacy case numbers (e.g., case 5 -> case 4)
+  if (normalizedCaseNumber === 'case_05') {
+    const legacyKey = `case_04_${stationId}`;
+    if (STATION_CONFIGS[legacyKey]) return STATION_CONFIGS[legacyKey];
   }
 
   // Fallback default config if custom config not present

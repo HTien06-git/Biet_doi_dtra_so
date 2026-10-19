@@ -54,6 +54,8 @@ export interface StationConfig {
 export type SyncEventType = 
   | 'DEVICE_ONLINE'
   | 'USER_JOINED'
+  | 'USER_LEFT'
+  | 'DEVICE_OFFLINE'
   | 'CASE_STARTED'
   | 'STATION_ENTER'
   | 'CLUE_DISCOVERED'

@@ -71,10 +71,12 @@ export default async function handler(req: any, res: any) {
         if (password && password !== ADMIN_PASSWORD) {
           return res.status(401).json({ success: false, error: 'Chưa được cấp quyền Admin' });
         }
+        (globalThis as any).__DTS_SYSTEM_RESET_AT__ = Date.now();
         await clearAllDbSessions();
         return res.status(200).json({
           success: true,
           message: 'Đã dọn sạch toàn bộ dữ liệu máy chủ. Bảng thi đấu đã về 0!',
+          resetAt: (globalThis as any).__DTS_SYSTEM_RESET_AT__,
         });
       }
 
