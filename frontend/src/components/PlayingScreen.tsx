@@ -278,7 +278,7 @@ export default function PlayingScreen() {
       </header>
 
       {/* 2. Main Game Area: Split View 2 Cột Trên Laptop (Max 1100px) */}
-      <div className="max-w-[1100px] mx-auto px-4 pt-4">
+      <div className="max-w-[1100px] mx-auto px-2 sm:px-4 pt-2 sm:pt-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           
           {/* CỘT TRÁI (Lg: 7 cols): Khung Căn Phòng 2D + Khay Gỗ Trái + Băng Rôn Xanh Đáy */}
@@ -287,17 +287,17 @@ export default function PlayingScreen() {
             <div className="relative game-room-stage flex">
               
               {/* KHAY GỖ BÊN TRÁI (Left Wooden Evidence Tray) */}
-              <div className="w-14 sm:w-16 game-wooden-tray flex flex-col items-center py-3 px-1 gap-2.5 flex-shrink-0 z-20">
+              <div className="w-12 sm:w-16 game-wooden-tray flex flex-col items-center py-2.5 sm:py-3 px-1 gap-2 sm:gap-2.5 flex-shrink-0 z-20">
                 {/* Nút Kính Lúp Tròn Màu Vàng Cam */}
                 <button
                   onClick={() => {
                     sounds.playMagnify();
                     setShowEvidence(true);
                   }}
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-b from-[#FDE047] to-[#F59E0B] border-3 border-[#331A05] flex items-center justify-center shadow-[0_4px_0_#331A05] hover:scale-105 active:translate-y-1 transition-all"
+                  className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gradient-to-b from-[#FDE047] to-[#F59E0B] border-2 sm:border-3 border-[#331A05] flex items-center justify-center shadow-[0_3px_0_#331A05] sm:shadow-[0_4px_0_#331A05] hover:scale-105 active:translate-y-1 transition-all"
                   title="Soi Kính Lúp Bằng Chứng"
                 >
-                  <Search className="w-5 h-5 text-[#451A03] stroke-[3]" />
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#451A03] stroke-[3]" />
                 </button>
 
                 {/* Các ô vuông viền gỗ chứa ảnh bằng chứng */}
@@ -309,7 +309,7 @@ export default function PlayingScreen() {
                       setSelectedEvidenceIndex(i);
                       setShowEvidence(true);
                     }}
-                    className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#FFFDF5] border-2 border-[#331A05] flex items-center justify-center shadow-[0_2px_0_#331A05] hover:bg-[#FEF08A] hover:scale-105 transition-all"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#FFFDF5] border-2 border-[#331A05] flex items-center justify-center shadow-[0_2px_0_#331A05] hover:bg-[#FEF08A] hover:scale-105 transition-all"
                     title={ev.title}
                   >
                     {getEvidenceIcon(ev.type)}

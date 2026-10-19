@@ -57,28 +57,28 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
   };
 
   return (
-    <div className="relative w-full h-full min-h-[300px] sm:min-h-[360px] select-none overflow-hidden">
+    <div className="relative w-full h-full min-h-[320px] sm:min-h-[360px] select-none overflow-hidden">
       
       {/* 1. DYNAMIC SCENE BACKGROUND THEMES */}
       <SceneBackground theme={config.backgroundTheme} />
 
       {/* 2. DYNAMIC CHARACTER SPRITE & EXPRESSIONS */}
-      <div className="absolute left-3 sm:left-6 bottom-0 z-20 pointer-events-none">
+      <div className="absolute left-2 sm:left-6 bottom-0 z-20 pointer-events-none">
         <DynamicCharacterSprite
           name={config.character.name}
           expression={config.character.expression}
         />
       </div>
 
-      {/* 3. DYNAMIC COMIC SPEECH BUBBLE (Separated cleanly on top-left) */}
+      {/* 3. DYNAMIC COMIC SPEECH BUBBLE (Clean top zone - full width on mobile, left on desktop) */}
       <motion.div
         key={`${config.caseId}_${config.stationId}`}
         initial={{ scale: 0.85, opacity: 0, y: 15 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 15 }}
-        className="absolute left-16 sm:left-24 top-2 sm:top-3 z-25 max-w-[180px] sm:max-w-[220px] md:max-w-[250px]"
+        className="absolute left-2 sm:left-24 top-2 sm:top-3 right-2 sm:right-auto z-25 sm:max-w-[240px] md:max-w-[270px]"
       >
-        <div className="relative bg-white border-3 border-[#1E293B] rounded-2xl p-2.5 sm:p-3 shadow-[0_4px_0_#1E293B]">
+        <div className="relative bg-white border-2 sm:border-3 border-[#1E293B] rounded-xl sm:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-[0_3px_0_#1E293B] sm:shadow-[0_4px_0_#1E293B]">
           {/* Dialogue Tag */}
           <div className="flex items-center gap-1.5 mb-1">
             <span className="inline-block px-1.5 py-0.2 rounded-md bg-[#1A1AFF] text-white font-display font-black text-[8px] sm:text-[9px] uppercase tracking-wider">
@@ -91,19 +91,19 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
             )}
           </div>
 
-          <p className="text-[11px] sm:text-xs font-bold text-[#0F172A] leading-snug">
+          <p className="text-[10.5px] sm:text-xs font-bold text-[#0F172A] leading-snug">
             {config.character.dialogueText}
           </p>
 
           {/* Comic speech bubble tail pointing to character */}
-          <div className="absolute -bottom-2.5 left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-[#1E293B]" />
-          <div className="absolute -bottom-1.5 left-[18px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white" />
+          <div className="absolute -bottom-2.5 left-6 sm:left-4 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-[#1E293B]" />
+          <div className="absolute -bottom-1.5 left-[26px] sm:left-[18px] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white" />
         </div>
       </motion.div>
 
-      {/* 4. DYNAMIC INTERACTIVE CLUE TOKENS (Compact pills on top-right, zero collision) */}
-      <div className="absolute right-2 sm:right-3.5 top-2 sm:top-3 z-25 flex flex-col gap-1.5 items-end">
-        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#1E293B]/85 text-[#FDE047] text-[9px] font-black uppercase tracking-wider backdrop-blur-xs shadow-sm">
+      {/* 4. DYNAMIC INTERACTIVE CLUE TOKENS (Bottom-right on mobile, Top-right on desktop - ZERO overlap!) */}
+      <div className="absolute right-2 sm:right-3.5 bottom-2 sm:top-3 sm:bottom-auto z-25 flex flex-col gap-1 sm:gap-1.5 items-end">
+        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 sm:px-2 rounded-full bg-[#1E293B]/85 text-[#FDE047] text-[8px] sm:text-[9px] font-black uppercase tracking-wider backdrop-blur-xs shadow-sm">
           <Sparkles className="w-2.5 h-2.5" />
           MANH MỐI ({config.interactiveClues.length})
         </div>
@@ -117,25 +117,25 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
             transition={{ delay: idx * 0.08 + 0.05 }}
             whileHover={{ scale: 1.04, x: -2 }}
             whileTap={{ scale: 0.96 }}
-            className="group relative flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/95 border-2 border-[#1E293B] shadow-[0_2px_0_#1E293B] hover:border-[#1A1AFF] hover:bg-[#F8FAFC] transition-all text-left backdrop-blur-sm cursor-pointer w-auto max-w-[145px] sm:max-w-[175px]"
+            className="group relative flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/95 border-2 border-[#1E293B] shadow-[0_2px_0_#1E293B] hover:border-[#1A1AFF] hover:bg-[#F8FAFC] transition-all text-left backdrop-blur-sm cursor-pointer w-auto max-w-[130px] sm:max-w-[175px]"
             title="Click để soi chi tiết bằng chứng"
           >
             {/* Pulsing radar dot for interactivity */}
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+            <span className="absolute -top-1 -right-1 flex h-2 sm:h-2.5 w-2 sm:w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1A1AFF] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#1A1AFF]"></span>
+              <span className="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-[#1A1AFF]"></span>
             </span>
 
-            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#EFF6FF] border border-[#1E293B] flex items-center justify-center flex-shrink-0 group-hover:bg-[#DBEAFE] transition-colors">
+            <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-[#EFF6FF] border border-[#1E293B] flex items-center justify-center flex-shrink-0 group-hover:bg-[#DBEAFE] transition-colors">
               {getClueIcon(clue.iconType)}
             </div>
 
             <div className="min-w-0 pr-0.5">
-              <span className="text-[10px] sm:text-[11px] font-display font-black text-[#0F172A] block leading-tight truncate group-hover:text-[#1A1AFF] transition-colors">
+              <span className="text-[9px] sm:text-[11px] font-display font-black text-[#0F172A] block leading-tight truncate group-hover:text-[#1A1AFF] transition-colors">
                 {clue.label}
               </span>
-              <span className="text-[8px] sm:text-[9px] font-bold text-[#64748B] flex items-center gap-0.5">
-                <Search className="w-2.5 h-2.5 text-[#1A1AFF]" /> Soi chi tiết
+              <span className="text-[7.5px] sm:text-[9px] font-bold text-[#64748B] flex items-center gap-0.5">
+                <Search className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#1A1AFF]" /> Soi chi tiết
               </span>
             </div>
           </motion.button>
@@ -484,7 +484,7 @@ function DynamicCharacterSprite({
           : { y: [0, -3, 0] }
       }
       transition={{ duration: expression === 'fearful' ? 0.2 : 2.5, repeat: Infinity, ease: 'easeInOut' }}
-      className="w-24 sm:w-32 h-36 sm:h-44 relative"
+      className="w-20 sm:w-32 h-32 sm:h-44 relative"
     >
       <svg viewBox="0 0 140 180" className="w-full h-full drop-shadow-md">
         {/* Detective Coat / Victim Clothing */}
