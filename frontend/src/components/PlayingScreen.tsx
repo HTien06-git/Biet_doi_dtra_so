@@ -15,7 +15,8 @@ import { useGame } from '@/lib/gameStore';
 import { Station } from '@/data/casesData';
 import { sounds } from '@/lib/sounds';
 import GameIcon from './GameIcon';
-import { CaseHunterRoomStage } from '@/assets/illustrations';
+import StationCanvas from '@/components/game/StationCanvas';
+import { multiplayerSync } from '@/lib/multiplayerSync';
 
 export default function PlayingScreen() {
   const {
@@ -38,6 +39,30 @@ export default function PlayingScreen() {
   useEffect(() => {
     setIsSoundEnabled(sounds.isEnabled());
   }, []);
+
+  const currentTotalScore = progress?.totalScore || 0;
+
+  // Multi-device real-time sync & presence registration
+  useEffect(() => {
+    if (caseData && state.playerName) {
+      multiplayerSync.registerDevice({
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: state.currentStationIndex + 1,
+        score: currentTotalScore,
+      });
+
+      multiplayerSync.broadcastEvent({
+        eventType: 'STATION_ENTER',
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: state.currentStationIndex + 1,
+        totalScore: currentTotalScore,
+      });
+    }
+  }, [caseData?.id, state.currentStationIndex, state.playerName, state.teamCode, currentTotalScore]);
 
   const toggleSound = () => {
     const next = sounds.toggle();
@@ -72,6 +97,18 @@ export default function PlayingScreen() {
 
     if (isCurrentAnswerCorrect) {
       sounds.playCorrect();
+      const updatedScore = currentTotalScore + station.points;
+      
+      multiplayerSync.broadcastEvent({
+        eventType: 'ANSWER_ATTEMPT',
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: state.currentStationIndex + 1,
+        scoreDelta: station.points,
+        totalScore: updatedScore,
+      });
+
       dispatch({
         type: 'ANSWER_CORRECT',
         payload: {
@@ -79,14 +116,43 @@ export default function PlayingScreen() {
           points: station.points,
         },
       });
+
+      if (isLastStation) {
+        multiplayerSync.broadcastEvent({
+          eventType: 'CASE_FINISHED',
+          playerName: state.playerName,
+          teamCode: state.teamCode,
+          caseId: caseData.id,
+          stationId: state.currentStationIndex + 1,
+          totalScore: updatedScore,
+        });
+      }
     } else if (state.gameMode === 'strict') {
       sounds.playWrong();
+      multiplayerSync.broadcastEvent({
+        eventType: 'ANSWER_ATTEMPT',
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: state.currentStationIndex + 1,
+        scoreDelta: 0,
+        totalScore: currentTotalScore,
+      });
       dispatch({
         type: 'ANSWER_WRONG_STRICT',
         payload: { stationIndex: state.currentStationIndex },
       });
     } else {
       sounds.playWrong();
+      multiplayerSync.broadcastEvent({
+        eventType: 'ANSWER_ATTEMPT',
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: state.currentStationIndex + 1,
+        scoreDelta: 0,
+        totalScore: currentTotalScore,
+      });
       setShowWrongFeedback(true);
       dispatch({ type: 'RESET_STATION_UI' });
     }
@@ -95,6 +161,14 @@ export default function PlayingScreen() {
   const handleNextStation = () => {
     sounds.playClick();
     setShowWrongFeedback(false);
+    multiplayerSync.broadcastEvent({
+      eventType: 'STATION_COMPLETED',
+      playerName: state.playerName,
+      teamCode: state.teamCode,
+      caseId: caseData.id,
+      stationId: state.currentStationIndex + 1,
+      totalScore: currentTotalScore,
+    });
     dispatch({ type: 'NEXT_STATION' });
   };
 
@@ -206,14 +280,21 @@ export default function PlayingScreen() {
                 ))}
               </div>
 
-              {/* KHUNG CĂN PHÒNG HIỆN TRƯỜNG 2D SVG */}
+              {/* KHUNG CĂN PHÒNG HIỆN TRƯỜNG 2D DYNAMIC ENGINE */}
               <div className="flex-1 min-w-0">
-                <CaseHunterRoomStage
+                <StationCanvas
                   caseId={caseData.id}
                   stationIndex={state.currentStationIndex}
-                  onInspectItem={() => {
-                    sounds.playMagnify();
-                    setShowEvidence(true);
+                  onClueInspected={(clue) => {
+                    multiplayerSync.broadcastEvent({
+                      eventType: 'CLUE_DISCOVERED',
+                      playerName: state.playerName,
+                      teamCode: state.teamCode,
+                      caseId: caseData.id,
+                      stationId: state.currentStationIndex + 1,
+                      clueId: clue.id,
+                      totalScore: currentTotalScore,
+                    });
                   }}
                 />
               </div>

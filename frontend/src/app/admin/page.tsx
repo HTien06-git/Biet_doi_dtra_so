@@ -6,10 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, Key, Lock, Unlock, Trophy, Users, Clock, Download, RefreshCw,
   Search, ArrowLeft, CheckCircle2, AlertCircle, FileSpreadsheet, Trash2,
-  Sparkles, ExternalLink, Filter, Medal, Award, LogOut
+  Sparkles, ExternalLink, Filter, Medal, Award, LogOut, Activity, Radio,
+  Zap, Cpu, Server, Wifi, Play, Square
 } from 'lucide-react';
 import { PlayerSession, getAllSessions, savePlayerSession } from '@/lib/supabase';
 import { CASES_DATA } from '@/data/casesData';
+import { multiplayerSync } from '@/lib/multiplayerSync';
+import { TelemetryEvent, ConnectedDevice } from '@/types/case';
 
 // Fallback password if env is not loaded on client
 const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
@@ -23,8 +26,14 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'in_progress'>('all');
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants'>('leaderboard');
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants' | 'telemetry'>('leaderboard');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Live Multiplayer Telemetry State (50+ Device Concurrency)
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([]);
+  const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
+  const [isSimulatingConcurrency, setIsSimulatingConcurrency] = useState<boolean>(false);
+  const [stopSimRef, setStopSimRef] = useState<(() => void) | null>(null);
 
   // Check auth session
   useEffect(() => {
@@ -36,6 +45,39 @@ export default function AdminDashboardPage() {
       }
     }
   }, []);
+
+  // Listen to Live Telemetry & Connected Devices Stream
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubDevices = multiplayerSync.onDevicesChange((devs) => {
+      setConnectedDevices(devs);
+    });
+
+    const unsubEvents = multiplayerSync.onTelemetry((evt) => {
+      setTelemetryEvents((prev) => [evt, ...prev.slice(0, 79)]);
+    });
+
+    return () => {
+      unsubDevices();
+      unsubEvents();
+    };
+  }, [isAuthenticated]);
+
+  // Toggle 50+ Device Stress-Test Simulation
+  const handleToggleConcurrencySimulation = () => {
+    if (isSimulatingConcurrency && stopSimRef) {
+      stopSimRef();
+      setStopSimRef(null);
+      setIsSimulatingConcurrency(false);
+      showNotification('success', 'Đã dừng mô phỏng 50+ thiết bị.');
+    } else {
+      const stopFn = multiplayerSync.simulateHighConcurrency(55);
+      setStopSimRef(() => stopFn);
+      setIsSimulatingConcurrency(true);
+      showNotification('success', 'Đã kích hoạt mô phỏng 55 thiết bị đồng thời!');
+    }
+  };
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -560,6 +602,17 @@ export default function AdminDashboardPage() {
             >
               👥 Tổng Hợp Người Tham Gia ({filteredSessions.length})
             </button>
+            <button
+              onClick={() => setActiveTab('telemetry')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black font-display uppercase tracking-wide transition-all flex items-center gap-1.5 ${
+                activeTab === 'telemetry'
+                  ? 'bg-[#1A1AFF] text-white shadow-sm'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-[#10B981] animate-pulse" />
+              📡 Giám Sát Real-Time ({connectedDevices.length})
+            </button>
           </div>
 
           {/* Search & Filter */}
@@ -824,6 +877,277 @@ export default function AdminDashboardPage() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ==================================================================== */}
+        {/* TAB 3: REAL-TIME MULTIPLAYER TELEMETRY & 50+ DEVICE CONCURRENCY      */}
+        {/* ==================================================================== */}
+        {activeTab === 'telemetry' && (
+          <div className="space-y-5">
+            {/* 1. High Concurrency Telemetry HUD Bar */}
+            <div className="game-card p-5 bg-gradient-to-r from-[#0F172A] to-[#1E293B] border-4 border-[#0F172A] text-white shadow-xl">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-2xl bg-[#1A1AFF] border-2 border-white/30 flex items-center justify-center text-white shadow-inner">
+                      <Radio className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-[#0F172A] animate-ping" />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-[#0F172A]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-[#10B981] text-[#064E3B] text-[10px] font-black uppercase tracking-wider">
+                        LIVE TELEMETRY
+                      </span>
+                      <span className="text-[11px] font-mono font-bold text-white/70">
+                        WebSocket Broadcast Engine
+                      </span>
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-display font-black text-white">
+                      TRUNG TÂM GIÁM SÁT THI ĐẤU ĐỒNG THỜI (50+ DEVICES)
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Metrics Badges & Concurrency Controls */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/20 text-center">
+                    <div className="text-[10px] uppercase font-bold text-white/60">Thiết Bị Kết Nối</div>
+                    <div className="text-xl font-display font-black text-[#FDE047] flex items-center justify-center gap-1">
+                      <Wifi className="w-4 h-4" />
+                      {connectedDevices.length}
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/20 text-center">
+                    <div className="text-[10px] uppercase font-bold text-white/60">Độ Trễ Phản Hồi</div>
+                    <div className="text-xl font-display font-black text-[#34D399]">
+                      &lt; 15ms
+                    </div>
+                  </div>
+
+                  <div className="px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/20 text-center">
+                    <div className="text-[10px] uppercase font-bold text-white/60">Sự Kiện Live</div>
+                    <div className="text-xl font-display font-black text-[#60A5FA]">
+                      {telemetryEvents.length}
+                    </div>
+                  </div>
+
+                  {/* 50+ Device Stress-Test Toggle Button */}
+                  <button
+                    onClick={handleToggleConcurrencySimulation}
+                    className={`px-4 py-2 rounded-xl text-xs font-black font-display uppercase tracking-wide flex items-center gap-2 transition-all active:translate-y-0.5 shadow-lg ${
+                      isSimulatingConcurrency
+                        ? 'bg-[#EF4444] hover:bg-[#DC2626] text-white shadow-[0_4px_0_#991B1B]'
+                        : 'bg-[#10B981] hover:bg-[#059669] text-white shadow-[0_4px_0_#065F46]'
+                    }`}
+                  >
+                    {isSimulatingConcurrency ? (
+                      <>
+                        <Square className="w-4 h-4 fill-current" />
+                        Dừng Stress-Test (55 Thiết Bị)
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4 fill-current" />
+                        Mô Phỏng 55+ Thiết Bị
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Station Heatmap Distribution */}
+            <div className="game-card p-4 bg-white border-[#1E293B]">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[#1A1AFF]" />
+                  <span className="text-xs font-black uppercase text-[#0F172A] tracking-wider">
+                    BẢN ĐỒ PHÂN BỔ THÍ SINH THEO 5 TRẠM ĐIỀU TRA
+                  </span>
+                </div>
+                <span className="text-[11px] font-bold text-[#64748B]">
+                  Tổng {connectedDevices.length} thiết bị đang làm bài
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                {[1, 2, 3, 4, 5].map((stId) => {
+                  const count = connectedDevices.filter((d) => d.currentStationId === stId).length;
+                  const percent = connectedDevices.length > 0 ? Math.round((count / connectedDevices.length) * 100) : 0;
+                  return (
+                    <div key={stId} className="p-3 rounded-xl bg-[#F8FAFC] border-2 border-[#CBD5E1] text-center">
+                      <div className="text-[10px] font-black uppercase text-[#64748B]">TRẠM {stId}</div>
+                      <div className="text-2xl font-display font-black text-[#1A1AFF] my-1">{count}</div>
+                      <div className="w-full bg-[#E2E8F0] h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[#1A1AFF] h-full transition-all duration-500 rounded-full"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                      <div className="text-[9px] font-bold text-[#94A3B8] mt-1">{percent}% người chơi</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. Main Split View: Active Devices Roster (Left 7) + Live Ticker (Right 5) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              
+              {/* Left Column (7 cols): Connected Devices Roster */}
+              <div className="lg:col-span-7 game-card p-0 bg-white border-[#1E293B] overflow-hidden">
+                <div className="p-4 bg-[#F8FAFC] border-b-2 border-[#CBD5E1] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#1A1AFF]" />
+                    <h3 className="font-display font-black text-xs uppercase text-[#0F172A]">
+                      DANH SÁCH THIẾT BỊ HOẠT ĐỘNG ({connectedDevices.length})
+                    </h3>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-[#EFF6FF] text-[#1E40AF] text-[10px] font-black">
+                    Auto-sweep 45s
+                  </span>
+                </div>
+
+                {connectedDevices.length === 0 ? (
+                  <div className="p-8 text-center text-xs font-bold text-[#64748B]">
+                    Chưa có thiết bị nào kết nối. Mở game ở tab khác hoặc nhấn nút &quot;Mô Phỏng 55+ Thiết Bị&quot; ở trên.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto max-h-[500px]">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="sticky top-0 bg-[#1E293B] text-white font-display font-black uppercase text-[10px] z-10">
+                        <tr>
+                          <th className="py-2.5 px-3">Thiết Bị</th>
+                          <th className="py-2.5 px-3">Điều Tra Viên</th>
+                          <th className="py-2.5 px-2">Đội</th>
+                          <th className="py-2.5 px-2 text-center">Trạm</th>
+                          <th className="py-2.5 px-2 text-center">Điểm</th>
+                          <th className="py-2.5 px-2 text-center">Trạng Thái</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
+                        {connectedDevices.map((dev) => (
+                          <tr key={dev.deviceId} className="hover:bg-[#F8FAFC]">
+                            <td className="py-2.5 px-3 font-mono text-[10px] text-[#64748B] truncate max-w-[100px]">
+                              {dev.deviceId}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-[#0F172A] truncate max-w-[130px]">
+                              {dev.playerName}
+                            </td>
+                            <td className="py-2.5 px-2">
+                              <span className="px-1.5 py-0.5 rounded bg-[#EFF6FF] text-[#1E40AF] font-mono text-[10px] font-bold">
+                                {dev.teamCode}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-bold text-[#1A1AFF]">
+                              Trạm {dev.currentStationId}/5
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-display font-black text-[#059669]">
+                              {dev.currentScore}đ
+                            </td>
+                            <td className="py-2.5 px-2 text-center">
+                              {dev.isOnline ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#064E3B] text-[9px] font-black uppercase">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                                  ONLINE
+                                </span>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#64748B] text-[9px] font-black uppercase">
+                                  IDLE
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column (5 cols): Live Telemetry Event Stream Ticker */}
+              <div className="lg:col-span-5 game-card p-0 bg-[#0F172A] border-4 border-[#1E293B] text-white overflow-hidden shadow-xl">
+                <div className="p-3.5 bg-[#1E293B] border-b border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Server className="w-4 h-4 text-[#38BDF8]" />
+                    <h3 className="font-display font-black text-xs uppercase text-white tracking-wider">
+                      LIVE EVENT TICKER STREAM
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#94A3B8]">
+                    {telemetryEvents.length} events
+                  </span>
+                </div>
+
+                <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto font-mono text-xs">
+                  {telemetryEvents.length === 0 ? (
+                    <div className="p-6 text-center text-[#64748B] text-xs">
+                      Đang lắng nghe luồng sự kiện thời gian thực...
+                    </div>
+                  ) : (
+                    telemetryEvents.map((evt) => {
+                      let badgeBg = 'bg-[#334155] text-white';
+                      let label: string = evt.eventType;
+                      if (evt.eventType === 'STATION_ENTER') {
+                        badgeBg = 'bg-[#1A1AFF] text-white';
+                        label = 'VÀO TRẠM';
+                      } else if (evt.eventType === 'CLUE_DISCOVERED') {
+                        badgeBg = 'bg-[#9333EA] text-white';
+                        label = 'SOI MANH MỐI';
+                      } else if (evt.eventType === 'ANSWER_ATTEMPT') {
+                        badgeBg = evt.scoreDelta && evt.scoreDelta > 0 ? 'bg-[#10B981] text-white' : 'bg-[#EF4444] text-white';
+                        label = evt.scoreDelta && evt.scoreDelta > 0 ? `TRẢ LỜI ĐÚNG (+${evt.scoreDelta})` : 'TRẢ LỜI SAI';
+                      } else if (evt.eventType === 'STATION_COMPLETED') {
+                        badgeBg = 'bg-[#059669] text-white';
+                        label = 'QUA TRẠM';
+                      } else if (evt.eventType === 'CASE_FINISHED') {
+                        badgeBg = 'bg-[#F59E0B] text-[#0F172A] font-black';
+                        label = 'PHÁ ÁN THÀNH CÔNG';
+                      }
+
+                      const timeStr = new Date(evt.timestamp).toLocaleTimeString('vi-VN');
+
+                      return (
+                        <div
+                          key={evt.id}
+                          className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[11px]"
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-black ${badgeBg}`}>
+                              {label}
+                            </span>
+                            <span className="text-[10px] text-white/50">{timeStr}</span>
+                          </div>
+                          <div className="text-white font-sans text-xs font-semibold">
+                            <strong>{evt.playerName}</strong> ({evt.teamCode})
+                            {evt.eventType === 'CLUE_DISCOVERED' && (
+                              <span className="text-[#C084FC]"> đã soi manh mối #{evt.clueId}</span>
+                            )}
+                            {evt.eventType === 'STATION_ENTER' && (
+                              <span className="text-[#93C5FD]"> bắt đầu khám phá Trạm {evt.stationId}</span>
+                            )}
+                            {evt.eventType === 'ANSWER_ATTEMPT' && (
+                              <span className="text-[#FDE047]"> tổng điểm: {evt.totalScore}đ</span>
+                            )}
+                            {evt.eventType === 'STATION_COMPLETED' && (
+                              <span className="text-[#6EE7B7]"> hoàn thành xuất sắc Trạm {evt.stationId}</span>
+                            )}
+                            {evt.eventType === 'CASE_FINISHED' && (
+                              <span className="text-[#FBBF24]"> đã cán đích toàn bộ 5 trạm!</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
 
