@@ -6,7 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trophy, Award, ShieldCheck, Copy, Check, RotateCcw,
+  Trophy, Award, ShieldCheck, Copy, Check,
   ChevronRight, Eye, Star, FileText, AlertOctagon, Download, X, Home
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
@@ -117,11 +117,6 @@ export default function SummaryScreen() {
     navigator.clipboard.writeText(confirmationCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  const handleReplayCase = () => {
-    sounds.playClick();
-    dispatch({ type: 'SET_STATION', payload: 0 });
   };
 
   return (
@@ -329,19 +324,51 @@ export default function SummaryScreen() {
                     sounds.playSelect();
                     setSelectedClue(idx);
                   }}
-                  disabled={!isUnlocked}
-                  className={`p-3 rounded-xl border-2 border-[#4A2C11] text-center transition-all ${
+                  className={`p-3 rounded-xl border-2 text-center transition-all flex flex-col justify-between ${
                     isUnlocked
-                      ? 'bg-[#FFFDF9] hover:bg-[#FEF08A] shadow-[0_3px_0_#4A2C11]'
-                      : 'bg-[#F1F5F9] opacity-50 cursor-not-allowed'
+                      ? 'bg-[#FFFDF9] hover:bg-[#FEF08A] border-[#4A2C11] shadow-[0_3px_0_#4A2C11]'
+                      : 'bg-[#FEF2F2] hover:bg-[#FEE2E2] border-[#DC2626] shadow-[0_3px_0_#991B1B]'
                   }`}
                 >
-                  <div className="flex justify-center mb-1">
-                    <GameIcon type={isUnlocked ? 'folder' : 'lock'} size="sm" theme={isUnlocked ? 'amber' : 'wood'} />
+                  <div>
+                    <div className="flex justify-center mb-1">
+                      {isUnlocked ? (
+                        <GameIcon type="folder" size="sm" theme="amber" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-lg bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center text-xs font-black text-[#DC2626]">
+                          ❌
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-xs font-display font-black text-[#1E293B]">Trạm {idx + 1}</span>
+                      {isUnlocked ? (
+                        <span className="px-1 py-0.2 bg-[#D1FAE5] text-[#059669] text-[8px] font-black rounded uppercase whitespace-nowrap">
+                          ✓ ĐÃ MỞ
+                        </span>
+                      ) : (
+                        <span className="px-1 py-0.2 bg-[#FEE2E2] text-[#DC2626] text-[8px] font-black rounded uppercase whitespace-nowrap">
+                          KHÔNG ĐẠT
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xs font-display font-black text-[#1E293B]">Trạm {idx + 1}</div>
-                  <div className="text-[10px] font-bold text-[#64748B] truncate mt-0.5">
-                    {isUnlocked ? st.clue.title : 'Chưa mở'}
+
+                  <div className="mt-1.5 pt-1.5 border-t border-black/10 min-h-[38px] flex items-center justify-center">
+                    {isUnlocked ? (
+                      <div className="text-[10px] font-bold text-[#059669] line-clamp-2 leading-tight text-center" title={st.clue.title}>
+                        {st.clue.title}
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5 text-center">
+                        <div className="text-[9.5px] font-black text-[#DC2626] leading-tight">
+                          Không hoàn thành trạm
+                        </div>
+                        <div className="text-[8.5px] font-bold text-[#94A3B8] leading-tight">
+                          Không tìm ra được manh mối
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -349,7 +376,7 @@ export default function SummaryScreen() {
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions (Cuộc thi: Đã phá án thì khóa điểm, KHÔNG cho chơi lại để sửa điểm) */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => {
@@ -363,21 +390,13 @@ export default function SummaryScreen() {
           </button>
 
           <button
-            onClick={handleReplayCase}
-            className="py-3.5 px-6 btn-game btn-game-white text-sm tracking-wide flex items-center justify-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
-            CHƠI LẠI
-          </button>
-
-          <button
             onClick={() => {
               sounds.playClick();
               dispatch({ type: 'COMPLETE_CASE' });
             }}
-            className="flex-1 py-3.5 btn-game btn-game-green text-sm tracking-wide flex items-center justify-center gap-2"
+            className="flex-1 py-3.5 btn-game btn-game-green text-sm tracking-wide flex items-center justify-center gap-2 shadow-[0_4px_0_#047857]"
           >
-            HỒ SƠ VỤ TIẾP THEO
+            {caseData.id < 4 ? 'HỒ SƠ VỤ TIẾP THEO' : 'VỀ DANH SÁCH VỤ ÁN'}
             <ChevronRight className="w-4 h-4 stroke-[3]" />
           </button>
         </div>
@@ -398,28 +417,57 @@ export default function SummaryScreen() {
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
             >
-              <div className="flex items-center justify-between border-b-2 border-[#4A2C11] pb-2">
-                <span className="font-display font-black text-xs uppercase text-[#DC2626]">
-                  📂 Manh Mối Trạm #{selectedClue + 1}
-                </span>
-                <button
-                  onClick={() => setSelectedClue(null)}
-                  className="p-1 rounded-lg border-2 border-[#4A2C11] hover:bg-[#FEF08A]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              {progress.stations[selectedClue]?.clueUnlocked ? (
+                <>
+                  <div className="flex items-center justify-between border-b-2 border-[#4A2C11] pb-2">
+                    <span className="font-display font-black text-xs uppercase text-[#059669] flex items-center gap-1.5">
+                      📂 Manh Mối Trạm #{selectedClue + 1}
+                    </span>
+                    <button
+                      onClick={() => setSelectedClue(null)}
+                      className="p-1 rounded-lg border-2 border-[#4A2C11] hover:bg-[#FEF08A]"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
 
-              <h4 className="font-display font-black text-sm text-[#1E293B]">
-                {caseData.stations[selectedClue].clue.title}
-              </h4>
-              <p className="p-3 bg-[#FFFDF9] border-2 border-[#4A2C11] rounded-xl text-xs font-semibold leading-relaxed text-[#1E293B]">
-                {caseData.stations[selectedClue].clue.content}
-              </p>
+                  <h4 className="font-display font-black text-sm text-[#1E293B]">
+                    {caseData.stations[selectedClue]?.clue?.title}
+                  </h4>
+                  <p className="p-3 bg-[#FFFDF9] border-2 border-[#4A2C11] rounded-xl text-xs font-semibold leading-relaxed text-[#1E293B]">
+                    {caseData.stations[selectedClue]?.clue?.content}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between border-b-2 border-[#DC2626] pb-2">
+                    <span className="font-display font-black text-xs uppercase text-[#DC2626] flex items-center gap-1.5">
+                      ❌ Trạm #{selectedClue + 1} · Không Hoàn Thành
+                    </span>
+                    <button
+                      onClick={() => setSelectedClue(null)}
+                      className="p-1 rounded-lg border-2 border-[#DC2626] hover:bg-[#FEE2E2]"
+                    >
+                      <X className="w-4 h-4 text-[#DC2626]" />
+                    </button>
+                  </div>
+
+                  <div className="p-3.5 bg-[#FEF2F2] border-2 border-[#FCA5A5] rounded-xl space-y-1.5 text-left">
+                    <h4 className="font-display font-black text-xs uppercase text-[#991B1B] flex items-center gap-1.5">
+                      Không tìm ra được manh mối
+                    </h4>
+                    <p className="text-xs font-semibold leading-relaxed text-[#7F1D1D]">
+                      Do điều tra viên không đưa ra đáp án chính xác hoặc chưa vượt qua thử thách tại trạm #{selectedClue + 1}, manh mối chứng cứ số tại hiện trường không được thu thập (+0 điểm).
+                    </p>
+                  </div>
+                </>
+              )}
 
               <button
                 onClick={() => setSelectedClue(null)}
-                className="w-full py-2.5 btn-game btn-game-amber text-xs"
+                className={`w-full py-2.5 text-xs ${
+                  progress.stations[selectedClue]?.clueUnlocked ? 'btn-game btn-game-amber' : 'btn-game btn-game-white'
+                }`}
               >
                 ĐÃ HIỂU
               </button>

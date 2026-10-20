@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  FileText, Star, Search, RotateCcw, LogOut, ChevronRight, Trophy, Puzzle, Shield,
+  FileText, Star, Search, LogOut, ChevronRight, Trophy, Puzzle, Shield,
   ShieldCheck, ExternalLink, Settings, MoreVertical
 } from 'lucide-react';
 import Link from 'next/link';
@@ -87,16 +87,15 @@ export default function LobbyScreen() {
 
   const handleSelectCase = (caseId: number) => {
     sounds.playClick();
-    // Chuyển sang màn hình lộ trình các trạm của vụ án (chỉ ghi nhận tham gia khi bấm vào giải trạm)
-    dispatch({ type: 'SELECT_CASE', payload: caseId });
-  };
-
-  const handleReset = () => {
-    sounds.playWrong();
-    if (confirm('Đồng chí có chắc muốn khởi động lại toàn bộ tiến trình điều tra?')) {
-      sounds.playClick();
-      dispatch({ type: 'RESET_PROGRESS' });
+    const caseProg = state.caseProgress[caseId];
+    if (caseProg?.isCompleted) {
+      // Cuộc thi: Vụ án đã hoàn thành thì xem kết quả phá án, KHÔNG cho chơi lại để sửa điểm!
+      dispatch({ type: 'SELECT_CASE', payload: caseId });
+      dispatch({ type: 'SET_SCREEN', payload: 'summary' });
+      return;
     }
+    // Chuyển sang màn hình lộ trình các trạm của vụ án
+    dispatch({ type: 'SELECT_CASE', payload: caseId });
   };
 
   const handleLogout = () => {
@@ -191,13 +190,6 @@ export default function LobbyScreen() {
                 <Settings className="w-4 h-4 text-white" />
               </Link>
               <button
-                onClick={handleReset}
-                className="p-1.5 rounded-xl bg-white/15 border-2 border-white/40 hover:bg-white/25 text-white active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all"
-                title="Khởi động lại tiến trình"
-              >
-                <RotateCcw className="w-4 h-4 text-white" />
-              </button>
-              <button
                 onClick={handleLogout}
                 className="p-1.5 rounded-xl bg-[#EF4444] border-2 border-[#991B1B] hover:bg-[#DC2626] text-white active:translate-y-0.5 shadow-[0_2px_0_#7F1D1D] transition-all"
                 title="Đổi điều tra viên"
@@ -235,16 +227,6 @@ export default function LobbyScreen() {
                     <Settings className="w-3.5 h-3.5 text-[#2563EB]" />
                     <span>Quản Trị Admin</span>
                   </Link>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      handleReset();
-                    }}
-                    className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold hover:bg-[#F8FAFC] text-[#1E293B] transition-colors"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5 text-[#D97706]" />
-                    <span>Chơi Lại Từ Đầu</span>
-                  </button>
                   <button
                     onClick={() => {
                       setShowMenu(false);
@@ -373,11 +355,18 @@ export default function LobbyScreen() {
                     </div>
                   </div>
 
-                  {/* Action Arrow */}
+                  {/* Action Arrow / Completed Badge */}
                   <div className="self-center flex-shrink-0">
-                    <div className="w-9 h-9 rounded-full bg-[#191AFE] border-2 border-[#000088] flex items-center justify-center shadow-[0_3px_0_#000066] text-white">
-                      <ChevronRight className="w-5 h-5 text-white stroke-[3]" />
-                    </div>
+                    {isCompleted ? (
+                      <div className="px-3 py-1.5 rounded-xl bg-[#ECFDF5] border-2 border-[#059669] text-[#059669] text-[10.5px] font-black uppercase flex items-center gap-1 shadow-sm whitespace-nowrap">
+                        <span>XEM KẾT QUẢ</span>
+                        <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
+                      </div>
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-[#191AFE] border-2 border-[#000088] flex items-center justify-center shadow-[0_3px_0_#000066] text-white">
+                        <ChevronRight className="w-5 h-5 text-white stroke-[3]" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

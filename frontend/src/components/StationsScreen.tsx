@@ -5,7 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, Lock, Star, Play, MapPin
+  ArrowLeft, Lock, Star, Play, MapPin, ChevronRight
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
@@ -26,7 +26,17 @@ export default function StationsScreen() {
   };
 
   const handleSelectStation = (index: number) => {
-    const canPlay = index === 0 || progress.stations[index - 1]?.completed;
+    if (progress.isCompleted) {
+      sounds.playClick();
+      dispatch({ type: 'SET_SCREEN', payload: 'summary' });
+      return;
+    }
+    const status = getStationStatus(index);
+    if (status === 'completed' || status === 'failed') {
+      sounds.playWrong();
+      return;
+    }
+    const canPlay = status === 'current';
     if (canPlay) {
       sounds.playClick();
       // Bắt đầu ghi nhận tham gia thi đấu vụ án khi người chơi thực sự bấm vào giải trạm
@@ -44,9 +54,12 @@ export default function StationsScreen() {
     }
   };
 
-  const getStationStatus = (index: number): 'completed' | 'current' | 'locked' => {
-    if (progress.stations[index]?.completed) return 'completed';
-    if (index === 0 || progress.stations[index - 1]?.completed) return 'current';
+  const getStationStatus = (index: number): 'completed' | 'failed' | 'current' | 'locked' => {
+    const st = progress.stations[index];
+    if (st?.completed && st?.clueUnlocked) return 'completed';
+    if (st?.attempts > 0 && !st?.clueUnlocked) return 'failed';
+    if (progress.isCompleted && !st?.completed) return 'failed';
+    if (!progress.isCompleted && (index === 0 || progress.stations[index - 1]?.completed || (progress.stations[index - 1]?.attempts > 0))) return 'current';
     return 'locked';
   };
 
@@ -114,11 +127,13 @@ export default function StationsScreen() {
                 initial={{ opacity: 0, x: -15 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.07 }}
-                className={`game-card p-3 sm:p-4 flex items-center gap-2.5 sm:gap-4 cursor-pointer transition-all ${
+                className={`game-card p-3 sm:p-4 flex items-center gap-2.5 sm:gap-4 transition-all ${
                   status === 'completed'
-                    ? 'bg-[#F0FDF4] border-[#059669]'
+                    ? 'bg-[#F0FDF4] border-[#059669] cursor-default'
+                    : status === 'failed'
+                    ? 'bg-[#FEF2F2] border-[#EF4444] cursor-default'
                     : status === 'current'
-                    ? 'bg-white border-[#191AFE] ring-4 ring-[#191AFE]/25 shadow-lg'
+                    ? 'bg-white border-[#191AFE] ring-4 ring-[#191AFE]/25 shadow-lg cursor-pointer'
                     : 'bg-[#F8FAFC] opacity-60 cursor-not-allowed'
                 }`}
               >
@@ -127,12 +142,14 @@ export default function StationsScreen() {
                   className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-3 border-[#1E293B] flex items-center justify-center font-display font-black text-base sm:text-lg flex-shrink-0 shadow-[0_3px_0_#1E293B] ${
                     status === 'completed'
                       ? 'bg-[#10B981] text-white'
+                      : status === 'failed'
+                      ? 'bg-[#EF4444] text-white'
                       : status === 'current'
                       ? 'bg-[#191AFE] text-white animate-bounce'
                       : 'bg-[#CBD5E1] text-[#64748B]'
                   }`}
                 >
-                  {status === 'completed' ? '✓' : index + 1}
+                  {status === 'completed' ? '✓' : status === 'failed' ? '✕' : index + 1}
                 </div>
 
                 {/* Station Info */}
@@ -144,6 +161,11 @@ export default function StationsScreen() {
                     {status === 'completed' && (
                       <span className="game-badge game-badge-green text-[9px] py-0 whitespace-nowrap flex-shrink-0">
                         ĐÃ XONG
+                      </span>
+                    )}
+                    {status === 'failed' && (
+                      <span className="inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-[#EF4444] text-white text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider whitespace-nowrap flex-shrink-0">
+                        KHÔNG HOÀN THÀNH
                       </span>
                     )}
                     {status === 'current' && (
@@ -167,10 +189,19 @@ export default function StationsScreen() {
                   {status === 'completed' ? (
                     <div className="text-right">
                       <span className="text-xs font-black text-[#059669] block">
-                        +{stProgress.score}đ
+                        +{stProgress?.score}đ
                       </span>
-                      <span className="text-[10px] text-[#64748B] font-bold">
+                      <span className="text-[10px] text-[#059669] font-bold">
                         Đã mở manh mối
+                      </span>
+                    </div>
+                  ) : status === 'failed' ? (
+                    <div className="text-right">
+                      <span className="text-xs font-black text-[#DC2626] block">
+                        +0đ
+                      </span>
+                      <span className="text-[9.5px] text-[#DC2626] font-bold">
+                        Không tìm ra manh mối
                       </span>
                     </div>
                   ) : status === 'current' ? (
@@ -188,6 +219,22 @@ export default function StationsScreen() {
             );
           })}
         </div>
+
+        {/* Nút Xem Hồ Sơ Phá Án khi vụ án đã hoàn tất thi đấu */}
+        {progress.isCompleted && (
+          <div className="pt-2 text-center">
+            <button
+              onClick={() => {
+                sounds.playClick();
+                dispatch({ type: 'SET_SCREEN', payload: 'summary' });
+              }}
+              className="w-full py-3.5 btn-game btn-game-green text-xs sm:text-sm font-black flex items-center justify-center gap-2 shadow-[0_4px_0_#047857]"
+            >
+              <span>XEM BÁO CÁO PHÁ ÁN (ĐÃ KHÓA ĐIỂM)</span>
+              <ChevronRight className="w-4 h-4 stroke-[3]" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
