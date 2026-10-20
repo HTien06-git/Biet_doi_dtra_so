@@ -7,7 +7,7 @@ import {
   Shield, Key, Unlock, Trophy, Users, Clock, Download, RefreshCw,
   Search, ArrowLeft, CheckCircle2, AlertCircle, Trash2,
   LogOut, Activity, Radio,
-  Zap, Server, Wifi, Square
+  Zap, Server, Wifi, Square, ChevronDown, ChevronUp, Settings, Lock, LockOpen, Eye
 } from 'lucide-react';
 import { PlayerSession, getAllSessions } from '@/lib/supabase';
 import { CASES_DATA } from '@/data/casesData';
@@ -27,9 +27,20 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'in_progress'>('all');
-  const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants' | 'telemetry'>('leaderboard');
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'participants' | 'telemetry' | 'settings'>('leaderboard');
   const [participantViewMode, setParticipantViewMode] = useState<'unique' | 'all'>('unique');
+  const [leaderboardView, setLeaderboardView] = useState<'individual' | 'team'>('individual');
+  const [expandedLeaderboardRows, setExpandedLeaderboardRows] = useState<Set<string>>(new Set());
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Admin Game Mode Settings (persisted in localStorage)
+  const [caseAccessMode, setCaseAccessMode] = useState<'single' | 'multi'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dts_admin_case_access_mode');
+      return (saved === 'single' || saved === 'multi') ? saved : 'multi';
+    }
+    return 'multi';
+  });
   const [lastResetTime, setLastResetTime] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('dts_admin_reset_at');
@@ -100,12 +111,29 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
+  // Fetch remote game config
+  const fetchGameConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/config');
+      const data = await res.json();
+      if (data.success && data.caseAccessMode) {
+        setCaseAccessMode(data.caseAccessMode);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('dts_admin_case_access_mode', data.caseAccessMode);
+        }
+      }
+    } catch (e) {
+      console.warn('Fetch config failed:', e);
+    }
+  }, []);
+
   // Fetch when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchSessions();
+      fetchGameConfig();
     }
-  }, [isAuthenticated, fetchSessions]);
+  }, [isAuthenticated, fetchSessions, fetchGameConfig]);
 
   // Listen to Live Telemetry, Connected Devices & Real-time Session Sync
   useEffect(() => {
@@ -320,6 +348,103 @@ export default function AdminDashboardPage() {
       return (b.total_score || 0) - (a.total_score || 0);
     });
   }, [filteredSessions]);
+
+  // Team Ranking - Aggregate scores across users with same team_code
+  const teamRanking = useMemo(() => {
+    const teamMap = new Map<string, {
+      team_code: string;
+      members: {
+        player_name: string;
+        case_id: number;
+        total_score: number;
+        stations_completed: number;
+        is_completed: boolean;
+        duration_seconds?: number;
+        station_scores: number[];
+      }[];
+      total_score: number;
+      total_stations: number;
+      cases_completed: number;
+      fastest_duration?: number;
+    }>();
+
+    filteredSessions.forEach((s) => {
+      const teamKey = s.team_code.trim().toUpperCase();
+      if (!teamMap.has(teamKey)) {
+        teamMap.set(teamKey, {
+          team_code: s.team_code,
+          members: [],
+          total_score: 0,
+          total_stations: 0,
+          cases_completed: 0,
+          fastest_duration: undefined,
+        });
+      }
+      const team = teamMap.get(teamKey)!;
+      team.members.push({
+        player_name: s.player_name,
+        case_id: s.case_id,
+        total_score: s.total_score || 0,
+        stations_completed: s.stations_completed || 0,
+        is_completed: s.is_completed || s.stations_completed === 5,
+        duration_seconds: s.duration_seconds,
+        station_scores: s.station_scores || [],
+      });
+      team.total_score += (s.total_score || 0);
+      team.total_stations += (s.stations_completed || 0);
+      if (s.is_completed || s.stations_completed === 5) {
+        team.cases_completed += 1;
+        if (s.duration_seconds && s.duration_seconds > 0) {
+          if (!team.fastest_duration || s.duration_seconds < team.fastest_duration) {
+            team.fastest_duration = s.duration_seconds;
+          }
+        }
+      }
+    });
+
+    return Array.from(teamMap.values()).sort((a, b) => {
+      // Sort by total_score DESC, then by cases_completed DESC, then fastest_duration ASC
+      if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+      if (b.cases_completed !== a.cases_completed) return b.cases_completed - a.cases_completed;
+      return (a.fastest_duration ?? 999999) - (b.fastest_duration ?? 999999);
+    });
+  }, [filteredSessions]);
+
+  // Helper to toggle expanded row
+  const toggleExpandedRow = (key: string) => {
+    setExpandedLeaderboardRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  // Save case access mode to localStorage, server API and broadcast
+  const handleCaseAccessModeChange = async (mode: 'single' | 'multi') => {
+    setCaseAccessMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dts_admin_case_access_mode', mode);
+    }
+    // Gửi lên server API để lưu trữ lâu dài
+    try {
+      await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caseAccessMode: mode }),
+      });
+    } catch (e) {
+      console.warn('API config update failed:', e);
+    }
+    // Broadcast to all connected devices via multiplayerSync
+    try {
+      multiplayerSync.broadcastGameConfig({ caseAccessMode: mode });
+    } catch (e) {
+      console.warn('Broadcast config error:', e);
+    }
+    showNotification('success', mode === 'single'
+      ? '🔒 Đã bật chế độ KHÓA: Mỗi người chơi chỉ được chọn 1 vụ án duy nhất!'
+      : '🔓 Đã bật chế độ TỰ DO: Người chơi được phá tất cả vụ án!');
+  };
 
   // Danh Sách Điều Tra Viên Duy Nhất (Không bao giờ trùng lặp tên người chơi)
   const uniqueParticipants = useMemo(() => {
@@ -728,7 +853,7 @@ export default function AdminDashboardPage() {
         {/* Toolbar & Filter Bar */}
         <div className="game-card p-4 bg-white border-[#1E293B] flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Tab Selection */}
-          <div className="flex items-center gap-1.5 w-full md:w-auto bg-[#F1F5F9] p-1 rounded-xl border border-[#CBD5E1]">
+          <div className="flex items-center gap-1.5 w-full md:w-auto bg-[#F1F5F9] p-1 rounded-xl border border-[#CBD5E1] flex-wrap">
             <button
               onClick={() => setActiveTab('leaderboard')}
               className={`px-3 py-1.5 rounded-lg text-xs font-black font-display uppercase tracking-wide transition-all ${
@@ -737,7 +862,7 @@ export default function AdminDashboardPage() {
                   : 'text-[#475569] hover:text-[#0F172A]'
               }`}
             >
-              🏆 Bảng Thành Tích Giải 5 Trạm ({leaderboard5Stations.length})
+              🏆 Bảng Thành Tích ({leaderboard5Stations.length})
             </button>
             <button
               onClick={() => setActiveTab('participants')}
@@ -747,7 +872,7 @@ export default function AdminDashboardPage() {
                   : 'text-[#475569] hover:text-[#0F172A]'
               }`}
             >
-              👥 Tổng Hợp Người Tham Gia ({uniqueParticipants.length})
+              👥 Người Tham Gia ({uniqueParticipants.length})
             </button>
             <button
               onClick={() => setActiveTab('telemetry')}
@@ -758,7 +883,18 @@ export default function AdminDashboardPage() {
               }`}
             >
               <Activity className="w-3.5 h-3.5 text-[#10B981] animate-pulse" />
-              📡 Giám Sát Real-Time ({filteredConnectedDevices.length})
+              📡 Real-Time ({filteredConnectedDevices.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black font-display uppercase tracking-wide transition-all flex items-center gap-1.5 ${
+                activeTab === 'settings'
+                  ? 'bg-[#191AFE] text-white shadow-sm'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              ⚙️ Cài Đặt
             </button>
           </div>
 
@@ -803,132 +939,453 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ==================================================================== */}
-        {/* TAB 1: BẢNG THÀNH TÍCH (LEADERBOARD) GIẢI 5 TRẠM (NHANH NHẤT -> CHẬM NHẤT) */}
+        {/* TAB 1: BẢNG THÀNH TÍCH (LEADERBOARD) - CÁ NHÂN & ĐỘI */}
         {/* ==================================================================== */}
         {activeTab === 'leaderboard' && (
-          <div className="game-card bg-white border-[#1E293B] overflow-hidden">
-            <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex items-center justify-between">
-              <div>
-                <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-[#EAB308]" />
-                  BẢNG XẾP HẠNG TỐC ĐỘ HOÀN THÀNH 5 TRẠM THỬ THÁCH
-                </h2>
-                <p className="text-[11px] font-bold text-[#64748B]">
-                  Xếp hạng tự động từ <strong>Nhanh nhất đến Chậm nhất</strong> dựa trên tổng thời gian vượt qua 5 trạm
-                </p>
+          <div className="space-y-4">
+            {/* Sub-tab: Individual vs Team */}
+            <div className="flex items-center gap-2">
+              <div className="bg-[#E2E8F0] p-0.5 rounded-lg flex items-center text-[10px] font-black">
+                <button
+                  onClick={() => setLeaderboardView('individual')}
+                  className={`px-3 py-1.5 rounded-md transition-all ${
+                    leaderboardView === 'individual'
+                      ? 'bg-[#191AFE] text-white shadow-sm'
+                      : 'text-[#475569] hover:text-[#0F172A]'
+                  }`}
+                >
+                  🏅 Xếp Hạng Cá Nhân ({leaderboard5Stations.length})
+                </button>
+                <button
+                  onClick={() => setLeaderboardView('team')}
+                  className={`px-3 py-1.5 rounded-md transition-all ${
+                    leaderboardView === 'team'
+                      ? 'bg-[#191AFE] text-white shadow-sm'
+                      : 'text-[#475569] hover:text-[#0F172A]'
+                  }`}
+                >
+                  🏆 Xếp Hạng Đội ({teamRanking.length})
+                </button>
               </div>
-
-              <span className="game-badge game-badge-yellow text-[10px] font-black">
-                {leaderboard5Stations.length} ĐỘI HOÀN TẤT
-              </span>
             </div>
 
-            {leaderboard5Stations.length === 0 ? (
-              <div className="p-12 text-center space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-full bg-[#F1F5F9] flex items-center justify-center text-3xl">
-                  ⏱️
+            {/* ===== INDIVIDUAL LEADERBOARD ===== */}
+            {leaderboardView === 'individual' && (
+              <div className="game-card bg-white border-[#1E293B] overflow-hidden">
+                <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex items-center justify-between">
+                  <div>
+                    <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-[#EAB308]" />
+                      BẢNG XẾP HẠNG TỐC ĐỘ HOÀN THÀNH 5 TRẠM THỬ THÁCH
+                    </h2>
+                    <p className="text-[11px] font-bold text-[#64748B]">
+                      Xếp hạng từ <strong>Nhanh nhất đến Chậm nhất</strong> · Nhấn vào hàng để xem chi tiết trạm hoàn thành
+                    </p>
+                  </div>
+                  <span className="game-badge game-badge-yellow text-[10px] font-black">
+                    {leaderboard5Stations.length} ĐỘI HOÀN TẤT
+                  </span>
                 </div>
-                <h3 className="font-display font-black text-base text-[#475569]">
-                  Chưa có đội nào hoàn thành 5 trạm thử thách
-                </h3>
-                <p className="text-xs font-semibold text-[#94A3B8] max-w-sm mx-auto">
-                  Hệ thống đang hoạt động và đồng bộ trực tuyến. Bảng vàng sẽ tự động nhảy số ngay khi có đội chơi hoàn tất phá án trên bất kỳ thiết bị nào!
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-[#1E293B] text-white font-display font-black uppercase text-[11px] tracking-wider">
-                      <th className="py-3 px-3 text-center w-16">Thứ Hạng</th>
-                      <th className="py-3 px-4">Tên Điều Tra Viên</th>
-                      <th className="py-3 px-3">Mã Đội</th>
-                      <th className="py-3 px-3 text-center">Số Trạm</th>
-                      <th className="py-3 px-4 text-center">Tổng Thời Gian Hoàn Thành</th>
-                      <th className="py-3 px-3 text-center">Điểm Số</th>
-                      <th className="py-3 px-4">Thời Gian Hoàn Thành Chi Tiết</th>
-                      <th className="py-3 px-3 text-center">Mã Xác Nhận</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
-                    {leaderboard5Stations.map((item, index) => {
-                      const isTop1 = index === 0;
-                      const isTop2 = index === 1;
-                      const isTop3 = index === 2;
 
-                      let rankBadge = (
-                        <span className="font-display font-black text-xs text-[#64748B]">#{index + 1}</span>
-                      );
-                      if (isTop1) {
-                        rankBadge = (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF08A] border-2 border-[#CA8A04] text-[#854D0E] font-black shadow-sm text-xs">
-                            🥇 1
-                          </span>
-                        );
-                      } else if (isTop2) {
-                        rankBadge = (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#E2E8F0] border-2 border-[#94A3B8] text-[#334155] font-black shadow-sm text-xs">
-                            🥈 2
-                          </span>
-                        );
-                      } else if (isTop3) {
-                        rankBadge = (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FED7AA] border-2 border-[#EA580C] text-[#9A3412] font-black shadow-sm text-xs">
-                            🥉 3
-                          </span>
-                        );
-                      }
-
-                      return (
-                        <tr
-                          key={`${item.player_name}-${item.team_code}-${index}`}
-                          className={`hover:bg-[#F8FAFC] transition-colors ${
-                            isTop1 ? 'bg-[#FFFBEB]' : isTop2 ? 'bg-[#F8FAFC]' : isTop3 ? 'bg-[#FFF7ED]' : ''
-                          }`}
-                        >
-                          <td className="py-3 px-3 text-center font-display font-black">
-                            {rankBadge}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="font-bold text-sm text-[#0F172A] block">
-                              {item.player_name}
-                            </span>
-                            <span className="text-[10px] text-[#64748B]">Vụ án #{item.case_id}</span>
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className="inline-block px-2 py-0.5 rounded-md bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] font-mono font-black text-[11px]">
-                              {item.team_code}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="game-badge game-badge-green text-[10px] font-black py-0">
-                              5/5 TRẠM
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#191AFE]/10 border border-[#191AFE]/30 text-[#191AFE] font-mono font-black text-xs">
-                              <Clock className="w-3.5 h-3.5" />
-                              {formatDuration(item.duration_seconds)}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="font-display font-black text-sm text-[#059669]">
-                              {item.total_score}/100đ
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-[#475569] text-[11px] font-medium">
-                            {formatDateTime(item.completion_time)}
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="font-mono font-black text-[11px] text-[#334155] bg-[#F1F5F9] px-2 py-1 rounded border border-[#CBD5E1]">
-                              {item.confirmation_code || '—'}
-                            </span>
-                          </td>
+                {leaderboard5Stations.length === 0 ? (
+                  <div className="p-12 text-center space-y-3">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-[#F1F5F9] flex items-center justify-center text-3xl">⏱️</div>
+                    <h3 className="font-display font-black text-base text-[#475569]">Chưa có đội nào hoàn thành 5 trạm thử thách</h3>
+                    <p className="text-xs font-semibold text-[#94A3B8] max-w-sm mx-auto">
+                      Bảng vàng sẽ tự động cập nhật khi có đội chơi hoàn tất phá án!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[#1E293B] text-white font-display font-black uppercase text-[11px] tracking-wider">
+                          <th className="py-3 px-3 text-center w-16">Thứ Hạng</th>
+                          <th className="py-3 px-4">Tên Điều Tra Viên</th>
+                          <th className="py-3 px-3">Mã Đội</th>
+                          <th className="py-3 px-4 text-center">Vụ Án & Các Trạm Đã Hoàn Thành</th>
+                          <th className="py-3 px-4 text-center">Tổng Thời Gian</th>
+                          <th className="py-3 px-3 text-center">Tổng Điểm</th>
+                          <th className="py-3 px-4">Thời Gian Hoàn Thành</th>
+                          <th className="py-3 px-3 text-center">Mã Xác Nhận</th>
+                          <th className="py-3 px-2 text-center w-10">Chi Tiết</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
+                        {leaderboard5Stations.map((item, index) => {
+                          const isTop1 = index === 0;
+                          const isTop2 = index === 1;
+                          const isTop3 = index === 2;
+                          const rowKey = `${item.player_name}-${item.team_code}-${item.case_id}`;
+                          const isExpanded = expandedLeaderboardRows.has(rowKey);
+
+                          // Get case data for station names
+                          const caseData = CASES_DATA.find((c) => c.id === item.case_id);
+                          const stationScores = item.station_scores || [];
+                          const totalStations = caseData?.stations?.length || 5;
+
+                          let rankBadge = (
+                            <span className="font-display font-black text-xs text-[#64748B]">#{index + 1}</span>
+                          );
+                          if (isTop1) {
+                            rankBadge = (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF08A] border-2 border-[#CA8A04] text-[#854D0E] font-black shadow-sm text-xs">
+                                🥇 1
+                              </span>
+                            );
+                          } else if (isTop2) {
+                            rankBadge = (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#E2E8F0] border-2 border-[#94A3B8] text-[#334155] font-black shadow-sm text-xs">
+                                🥈 2
+                              </span>
+                            );
+                          } else if (isTop3) {
+                            rankBadge = (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FED7AA] border-2 border-[#EA580C] text-[#9A3412] font-black shadow-sm text-xs">
+                                🥉 3
+                              </span>
+                            );
+                          }
+
+                          return (
+                            <>
+                              <tr
+                                key={rowKey}
+                                className={`hover:bg-[#F8FAFC] transition-colors cursor-pointer ${
+                                  isTop1 ? 'bg-[#FFFBEB]' : isTop2 ? 'bg-[#F8FAFC]' : isTop3 ? 'bg-[#FFF7ED]' : ''
+                                }`}
+                                onClick={() => toggleExpandedRow(rowKey)}
+                              >
+                                <td className="py-3 px-3 text-center font-display font-black">{rankBadge}</td>
+                                <td className="py-3 px-4">
+                                  <span className="font-bold text-sm text-[#0F172A] block">{item.player_name}</span>
+                                  <span className="text-[10px] text-[#64748B] flex items-center gap-1 mt-0.5">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#191AFE]" />
+                                    Vụ #{item.case_id}: {caseData?.title || 'N/A'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <span className="inline-block px-2 py-0.5 rounded-md bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] font-mono font-black text-[11px]">
+                                    {item.team_code}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <div className="flex flex-col items-center gap-1">
+                                    {/* Station pill badges */}
+                                    <div className="flex items-center gap-1 flex-wrap justify-center">
+                                      {(caseData?.stations || Array(totalStations).fill(null)).map((st, sIdx) => {
+                                        const score = stationScores[sIdx] ?? (item.stations_completed && sIdx < item.stations_completed ? 20 : 0);
+                                        const isPassed = score > 0;
+                                        return (
+                                          <span
+                                            key={sIdx}
+                                            title={st?.title ? `${st.title}: ${score}đ` : `Trạm ${sIdx + 1}: ${score}đ`}
+                                            className={`px-1.5 py-0.5 rounded text-[10px] font-black border transition-all ${
+                                              isPassed
+                                                ? 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]'
+                                                : 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] line-through'
+                                            }`}
+                                          >
+                                            {isPassed ? `✓ T${sIdx + 1}: ${score}đ` : `✕ T${sIdx + 1}`}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#64748B]">
+                                      Hoàn thành {item.stations_completed || totalStations}/{totalStations} trạm
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#191AFE]/10 border border-[#191AFE]/30 text-[#191AFE] font-mono font-black text-xs">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    {formatDuration(item.duration_seconds)}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  <span className="font-display font-black text-sm text-[#059669]">{item.total_score}/100đ</span>
+                                </td>
+                                <td className="py-3 px-4 text-[#475569] text-[11px] font-medium">{formatDateTime(item.completion_time)}</td>
+                                <td className="py-3 px-3 text-center">
+                                  <span className="font-mono font-black text-[11px] text-[#334155] bg-[#F1F5F9] px-2 py-1 rounded border border-[#CBD5E1]">
+                                    {item.confirmation_code || '—'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-4 h-4 text-[#191AFE] mx-auto" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-[#94A3B8] mx-auto" />
+                                  )}
+                                </td>
+                              </tr>
+
+                              {/* Expanded Station Details Row */}
+                              {isExpanded && (
+                                <tr key={`${rowKey}-detail`} className="bg-[#F8FAFC]">
+                                  <td colSpan={9} className="px-4 py-3">
+                                    <div className="rounded-xl border-2 border-[#E2E8F0] bg-white p-4">
+                                      <div className="flex items-center justify-between gap-2 mb-3">
+                                        <div className="flex items-center gap-2">
+                                          <Eye className="w-4 h-4 text-[#191AFE]" />
+                                          <span className="text-xs font-black uppercase text-[#0F172A]">
+                                            Chi Tiết Trạm Đã Hoàn Thành — Vụ Án #{item.case_id}: {caseData?.title || ''}
+                                          </span>
+                                        </div>
+                                        <span className="text-[11px] font-black text-[#191AFE] bg-[#EFF6FF] px-2.5 py-0.5 rounded-lg border border-[#BFDBFE]">
+                                          Tổng điểm vụ án: {item.total_score}/100đ
+                                        </span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                                        {(caseData?.stations || []).map((station, sIdx) => {
+                                          const sScore = stationScores[sIdx] ?? (item.stations_completed && sIdx < item.stations_completed ? station.points : 0);
+                                          const isCompleted = sScore > 0;
+                                          return (
+                                            <div
+                                              key={sIdx}
+                                              className={`p-3 rounded-xl border-2 text-left transition-all ${
+                                                isCompleted
+                                                  ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]'
+                                                  : 'bg-[#FEF2F2] border-[#FECACA] text-[#991B1B]'
+                                              }`}
+                                            >
+                                              <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[10px] font-black uppercase">Trạm {sIdx + 1}</span>
+                                                <span className={`text-[10px] font-black px-1.5 py-0.2 rounded ${
+                                                  isCompleted ? 'bg-[#A7F3D0] text-[#064E3B]' : 'bg-[#FECACA] text-[#991B1B]'
+                                                }`}>
+                                                  {isCompleted ? `+${sScore}đ` : '0đ'}
+                                                </span>
+                                              </div>
+                                              <div className="text-xs font-display font-black line-clamp-1 mb-1" title={station.title}>
+                                                {isCompleted ? '✅' : '❌'} {station.title}
+                                              </div>
+                                              <div className="text-[10px] font-semibold leading-snug line-clamp-2 opacity-90">
+                                                {isCompleted
+                                                  ? `🔎 Manh mối: ${station.clue?.title || 'Đã tìm ra'}`
+                                                  : '⚠️ Không tìm ra manh mối trạm này'}
+                                              </div>
+                                              <div className="text-[9px] font-black mt-2 pt-1 border-t border-black/10 uppercase">
+                                                {isCompleted ? 'Hoàn thành trạm' : 'Chưa hoàn thành'}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ===== TEAM LEADERBOARD ===== */}
+            {leaderboardView === 'team' && (
+              <div className="game-card bg-white border-[#1E293B] overflow-hidden">
+                <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex items-center justify-between">
+                  <div>
+                    <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-[#191AFE]" />
+                      BẢNG XẾP HẠNG ĐỘI – TỔNG ĐIỂM TOÀN BỘ THÀNH VIÊN
+                    </h2>
+                    <p className="text-[11px] font-bold text-[#64748B]">
+                      Xếp hạng theo <strong>tổng điểm các thành viên cùng mã đội</strong> phá các vụ án · Nhấn để xem chi tiết thành viên
+                    </p>
+                  </div>
+                  <span className="game-badge game-badge-yellow text-[10px] font-black">
+                    {teamRanking.length} ĐỘI
+                  </span>
+                </div>
+
+                {teamRanking.length === 0 ? (
+                  <div className="p-12 text-center space-y-3">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-[#F1F5F9] flex items-center justify-center text-3xl">🏆</div>
+                    <h3 className="font-display font-black text-base text-[#475569]">Chưa có đội nào tham gia</h3>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-[#1E293B] text-white font-display font-black uppercase text-[11px] tracking-wider">
+                          <th className="py-3 px-3 text-center w-16">Thứ Hạng</th>
+                          <th className="py-3 px-4">Mã Đội</th>
+                          <th className="py-3 px-3 text-center">Số Thành Viên</th>
+                          <th className="py-3 px-3 text-center">Vụ Án Hoàn Thành</th>
+                          <th className="py-3 px-3 text-center">Tổng Trạm</th>
+                          <th className="py-3 px-4 text-center">TỔNG ĐIỂM ĐỘI</th>
+                          <th className="py-3 px-3 text-center">Thời Gian Nhanh Nhất</th>
+                          <th className="py-3 px-2 text-center w-10">Chi Tiết</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
+                        {teamRanking.map((team, tIdx) => {
+                          const teamKey = `team-${team.team_code}`;
+                          const isExpanded = expandedLeaderboardRows.has(teamKey);
+                          const isTop1 = tIdx === 0;
+                          const isTop2 = tIdx === 1;
+                          const isTop3 = tIdx === 2;
+                          const uniqueMembers = new Set(team.members.map((m) => m.player_name.trim().toLowerCase()));
+
+                          let rankBadge = (
+                            <span className="font-display font-black text-xs text-[#64748B]">#{tIdx + 1}</span>
+                          );
+                          if (isTop1) {
+                            rankBadge = <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF08A] border-2 border-[#CA8A04] text-[#854D0E] font-black shadow-sm text-xs">🥇 1</span>;
+                          } else if (isTop2) {
+                            rankBadge = <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#E2E8F0] border-2 border-[#94A3B8] text-[#334155] font-black shadow-sm text-xs">🥈 2</span>;
+                          } else if (isTop3) {
+                            rankBadge = <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FED7AA] border-2 border-[#EA580C] text-[#9A3412] font-black shadow-sm text-xs">🥉 3</span>;
+                          }
+
+                          return (
+                            <>
+                              <tr
+                                key={teamKey}
+                                className={`hover:bg-[#F8FAFC] transition-colors cursor-pointer ${
+                                  isTop1 ? 'bg-[#FFFBEB]' : isTop2 ? 'bg-[#F8FAFC]' : isTop3 ? 'bg-[#FFF7ED]' : ''
+                                }`}
+                                onClick={() => toggleExpandedRow(teamKey)}
+                              >
+                                <td className="py-3 px-3 text-center font-display font-black">{rankBadge}</td>
+                                <td className="py-3 px-4">
+                                  <span className="inline-block px-2.5 py-1 rounded-md bg-[#EFF6FF] border-2 border-[#BFDBFE] text-[#1E40AF] font-mono font-black text-sm">
+                                    {team.team_code}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  <span className="font-display font-black text-sm text-[#0F172A]">{uniqueMembers.size}</span>
+                                  <span className="text-[10px] text-[#64748B] ml-1">người</span>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  <span className={`game-badge text-[10px] font-black py-0 ${
+                                    team.cases_completed > 0 ? 'game-badge-green' : 'game-badge-yellow'
+                                  }`}>
+                                    {team.cases_completed} vụ án
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-center font-bold">{team.total_stations} trạm</td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className="font-display font-black text-lg text-[#191AFE]">
+                                    {team.total_score}đ
+                                  </span>
+                                </td>
+                                <td className="py-3 px-3 text-center">
+                                  {team.fastest_duration ? (
+                                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#191AFE]/10 border border-[#191AFE]/30 text-[#191AFE] font-mono font-black text-[11px]">
+                                      <Clock className="w-3 h-3" />
+                                      {formatDuration(team.fastest_duration)}
+                                    </div>
+                                  ) : (
+                                    <span className="text-[#94A3B8]">—</span>
+                                  )}
+                                </td>
+                                <td className="py-3 px-2 text-center">
+                                  {isExpanded ? <ChevronUp className="w-4 h-4 text-[#191AFE] mx-auto" /> : <ChevronDown className="w-4 h-4 text-[#94A3B8] mx-auto" />}
+                                </td>
+                              </tr>
+
+                              {/* Expanded Team Members Detail */}
+                              {isExpanded && (
+                                <tr key={`${teamKey}-detail`} className="bg-[#F8FAFC]">
+                                  <td colSpan={8} className="px-4 py-3">
+                                    <div className="rounded-xl border-2 border-[#E2E8F0] bg-white p-4">
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <Users className="w-4 h-4 text-[#191AFE]" />
+                                        <span className="text-xs font-black uppercase text-[#0F172A]">
+                                          Chi Tiết Điểm Thành Viên Đội {team.team_code} — Tổng: {team.total_score}đ
+                                        </span>
+                                      </div>
+                                      <div className="overflow-x-auto">
+                                        <table className="w-full text-xs border-collapse">
+                                          <thead>
+                                            <tr className="bg-[#F1F5F9] text-[#475569] font-black uppercase text-[10px]">
+                                              <th className="py-2 px-3 text-left">Thành Viên</th>
+                                              <th className="py-2 px-3 text-center">Vụ Án</th>
+                                              <th className="py-2 px-3 text-center">Trạm Hoàn Thành</th>
+                                              <th className="py-2 px-3 text-center">Điểm Đóng Góp</th>
+                                              <th className="py-2 px-3 text-center">Điểm Từng Trạm</th>
+                                              <th className="py-2 px-3 text-center">Trạng Thái</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-[#E2E8F0]">
+                                            {team.members.map((m, mIdx) => {
+                                              const mCaseData = CASES_DATA.find((c) => c.id === m.case_id);
+                                              return (
+                                                <tr key={`${m.player_name}-${m.case_id}-${mIdx}`} className="hover:bg-[#F8FAFC]">
+                                                  <td className="py-2 px-3 font-bold text-[#0F172A]">{m.player_name}</td>
+                                                  <td className="py-2 px-3 text-center">
+                                                    <span className="px-1.5 py-0.5 rounded bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-black text-[10px]">
+                                                      #{m.case_id} {mCaseData?.title || ''}
+                                                    </span>
+                                                  </td>
+                                                  <td className="py-2 px-3 text-center font-bold">{m.stations_completed}/5</td>
+                                                  <td className="py-2 px-3 text-center">
+                                                    <span className="font-display font-black text-[#059669]">{m.total_score}đ</span>
+                                                  </td>
+                                                  <td className="py-2 px-3 text-center">
+                                                    <div className="flex items-center justify-center gap-1 flex-wrap">
+                                                      {(m.station_scores || []).map((sc, scIdx) => (
+                                                        <span
+                                                          key={scIdx}
+                                                          className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                                                            sc > 0
+                                                              ? 'bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]'
+                                                              : 'bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]'
+                                                          }`}
+                                                        >
+                                                          T{scIdx + 1}: {sc}đ
+                                                        </span>
+                                                      ))}
+                                                      {(m.station_scores || []).length === 0 && (
+                                                        <span className="text-[10px] text-[#94A3B8]">Không có dữ liệu</span>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                  <td className="py-2 px-3 text-center">
+                                                    {m.is_completed ? (
+                                                      <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[9px] font-black">✓ HOÀN THÀNH</span>
+                                                    ) : (
+                                                      <span className="px-2 py-0.5 rounded-full bg-[#FEF2F2] border border-[#DC2626] text-[#991B1B] text-[9px] font-black">CHƯA XONG</span>
+                                                    )}
+                                                  </td>
+                                                </tr>
+                                              );
+                                            })}
+                                          </tbody>
+                                          <tfoot>
+                                            <tr className="bg-[#F1F5F9] border-t-2 border-[#CBD5E1]">
+                                              <td className="py-2 px-3 font-black text-[#0F172A] uppercase" colSpan={3}>TỔNG CỘNG ĐỘI</td>
+                                              <td className="py-2 px-3 text-center">
+                                                <span className="font-display font-black text-lg text-[#191AFE]">{team.total_score}đ</span>
+                                              </td>
+                                              <td className="py-2 px-3 text-center text-[10px] font-bold text-[#64748B]">
+                                                = {team.members.map((m) => `${m.total_score}đ`).join(' + ')}
+                                              </td>
+                                              <td className="py-2 px-3 text-center">
+                                                <span className="text-[10px] font-black text-[#059669]">{team.cases_completed} vụ án hoàn thành</span>
+                                              </td>
+                                            </tr>
+                                          </tfoot>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1446,6 +1903,126 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* ==================================================================== */}
+        {/* TAB 4: CÀI ĐẶT QUẢN TRỊ (ADMIN SETTINGS)                          */}
+        {/* ==================================================================== */}
+        {activeTab === 'settings' && (
+          <div className="space-y-5">
+            {/* Game Mode: Case Access Control */}
+            <div className="game-card bg-white border-[#1E293B] overflow-hidden">
+              <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex items-center justify-between">
+                <div>
+                  <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-[#191AFE]" />
+                    CÀI ĐẶT CHẾ ĐỘ TRUY CẬP VỤ ÁN
+                  </h2>
+                  <p className="text-[11px] font-bold text-[#64748B]">
+                    Điều chỉnh cho phép người chơi được phá 1 vụ án duy nhất hoặc tất cả vụ án
+                  </p>
+                </div>
+                <span className={`game-badge text-[10px] font-black ${
+                  caseAccessMode === 'single' ? 'game-badge-yellow' : 'game-badge-green'
+                }`}>
+                  {caseAccessMode === 'single' ? '🔒 CHẾ ĐỘ KHÓA' : '🔓 CHẾ ĐỘ TỰ DO'}
+                </span>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Description */}
+                <div className="p-4 rounded-xl bg-[#FFF7ED] border-2 border-[#FDBA74] text-xs text-[#9A3412] font-semibold leading-relaxed">
+                  <strong className="font-black">📋 Giải thích:</strong>
+                  <ul className="mt-2 space-y-1.5 list-disc pl-4">
+                    <li><strong>Chế độ KHÓA (1 vụ án):</strong> Người chơi chỉ được chọn chơi 1 vụ án duy nhất. Sau khi bắt đầu 1 vụ án bất kỳ, các vụ án còn lại sẽ tự động bị khóa, không cho truy cập.</li>
+                    <li><strong>Chế độ TỰ DO (tất cả):</strong> Người chơi được tự do chọn phá tất cả các vụ án mà không bị hạn chế.</li>
+                  </ul>
+                </div>
+
+                {/* Mode Selector Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Single Case Mode */}
+                  <button
+                    onClick={() => handleCaseAccessModeChange('single')}
+                    className={`p-5 rounded-2xl border-3 text-left transition-all active:translate-y-0.5 ${
+                      caseAccessMode === 'single'
+                        ? 'bg-[#FEF3C7] border-[#D97706] shadow-lg ring-2 ring-[#F59E0B]/30'
+                        : 'bg-white border-[#CBD5E1] hover:border-[#D97706] hover:bg-[#FFFBEB]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                        caseAccessMode === 'single' ? 'bg-[#D97706] text-white' : 'bg-[#F1F5F9] text-[#64748B]'
+                      }`}>
+                        <Lock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="font-display font-black text-sm uppercase text-[#0F172A]">CHẾ ĐỘ KHÓA</div>
+                        <div className="text-[10px] font-bold text-[#64748B] uppercase">Chỉ 1 vụ án duy nhất</div>
+                      </div>
+                      {caseAccessMode === 'single' && (
+                        <CheckCircle2 className="w-6 h-6 text-[#D97706] ml-auto" />
+                      )}
+                    </div>
+                    <p className="text-xs font-semibold text-[#475569] leading-relaxed">
+                      Người chơi chỉ được chọn và phá <strong>1 vụ án duy nhất</strong>. Các vụ án khác sẽ tự động bị khóa sau khi đã chọn 1 vụ án bất kỳ.
+                    </p>
+                  </button>
+
+                  {/* Multi Case Mode */}
+                  <button
+                    onClick={() => handleCaseAccessModeChange('multi')}
+                    className={`p-5 rounded-2xl border-3 text-left transition-all active:translate-y-0.5 ${
+                      caseAccessMode === 'multi'
+                        ? 'bg-[#ECFDF5] border-[#059669] shadow-lg ring-2 ring-[#10B981]/30'
+                        : 'bg-white border-[#CBD5E1] hover:border-[#059669] hover:bg-[#F0FDF4]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                        caseAccessMode === 'multi' ? 'bg-[#059669] text-white' : 'bg-[#F1F5F9] text-[#64748B]'
+                      }`}>
+                        <LockOpen className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="font-display font-black text-sm uppercase text-[#0F172A]">CHẾ ĐỘ TỰ DO</div>
+                        <div className="text-[10px] font-bold text-[#64748B] uppercase">Phá tất cả vụ án</div>
+                      </div>
+                      {caseAccessMode === 'multi' && (
+                        <CheckCircle2 className="w-6 h-6 text-[#059669] ml-auto" />
+                      )}
+                    </div>
+                    <p className="text-xs font-semibold text-[#475569] leading-relaxed">
+                      Người chơi được tự do chọn phá <strong>tất cả vụ án</strong> mà không bị hạn chế. Phù hợp cho luyện tập hoặc sự kiện không giới hạn.
+                    </p>
+                  </button>
+                </div>
+
+                {/* Current Status */}
+                <div className={`p-4 rounded-xl border-2 flex items-center gap-3 ${
+                  caseAccessMode === 'single'
+                    ? 'bg-[#FEF3C7] border-[#D97706]'
+                    : 'bg-[#ECFDF5] border-[#059669]'
+                }`}>
+                  {caseAccessMode === 'single' ? (
+                    <Lock className="w-5 h-5 text-[#D97706] flex-shrink-0" />
+                  ) : (
+                    <LockOpen className="w-5 h-5 text-[#059669] flex-shrink-0" />
+                  )}
+                  <div className="text-xs font-bold">
+                    <span className="font-black uppercase">
+                      {caseAccessMode === 'single' ? 'Đang áp dụng: CHẾ ĐỘ KHÓA (1 VỤ ÁN)' : 'Đang áp dụng: CHẾ ĐỘ TỰ DO (TẤT CẢ VỤ ÁN)'}
+                    </span>
+                    <span className="text-[#475569] block mt-0.5">
+                      {caseAccessMode === 'single'
+                        ? 'Mỗi người chơi chỉ được chọn 1 vụ án. Sau khi bắt đầu vụ án đầu tiên, các vụ án khác sẽ bị khóa tự động.'
+                        : 'Người chơi được phá tất cả 4 vụ án mà không bị hạn chế nào.'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

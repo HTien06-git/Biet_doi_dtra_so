@@ -17,6 +17,7 @@ const TOPIC_TELEMETRY = 'dts/v1/telemetry';
 const TOPIC_SESSIONS = 'dts/v1/sessions';
 const TOPIC_SYNC = 'dts/v1/sync';
 const TOPIC_SYSTEM = 'dts/v1/system';
+const TOPIC_CONFIG = 'dts/v1/config';
 
 export function getOrCreateDeviceId(): string {
   if (typeof window === 'undefined') return 'server_device';
@@ -37,6 +38,7 @@ class MultiplayerSyncManager {
   private deviceListeners: Set<(devices: ConnectedDevice[]) => void> = new Set();
   private sessionListeners: Set<(session: PlayerSession) => void> = new Set();
   private systemResetListeners: Set<() => void> = new Set();
+  private configListeners: Set<(config: { caseAccessMode: 'single' | 'multi' }) => void> = new Set();
 
   private activeDevices: Map<string, ConnectedDevice> = new Map();
   private heartbeatTimer: NodeJS.Timeout | null = null;
@@ -62,6 +64,8 @@ class MultiplayerSyncManager {
           if (e.data) {
             if (e.data.__dts_system_reset) {
               this.handleIncomingSystemReset();
+            } else if (e.data.__dts_config) {
+              this.handleIncomingConfig(e.data.config);
             } else if (e.data.__dts_telemetry) {
               this.handleIncomingTelemetry(e.data.event);
             } else if (e.data.__dts_session) {
@@ -87,7 +91,7 @@ class MultiplayerSyncManager {
 
       client.on('connect', () => {
         console.log('📡 Connected to Global Cloud Relay (EMQX WebSocket)');
-        client.subscribe([TOPIC_TELEMETRY, TOPIC_SESSIONS, TOPIC_SYNC, TOPIC_SYSTEM], (err) => {
+        client.subscribe([TOPIC_TELEMETRY, TOPIC_SESSIONS, TOPIC_SYNC, TOPIC_SYSTEM, TOPIC_CONFIG], (err) => {
           if (err) console.warn('MQTT Subscribe error:', err);
         });
       });
@@ -99,6 +103,8 @@ class MultiplayerSyncManager {
 
           if (topic === TOPIC_SYSTEM || data.type === 'SYSTEM_RESET') {
             this.handleIncomingSystemReset();
+          } else if (topic === TOPIC_CONFIG || data.type === 'GAME_CONFIG') {
+            this.handleIncomingConfig(data.config || data);
           } else if (topic === TOPIC_TELEMETRY && data.id) {
             this.handleIncomingTelemetry(data);
           } else if (topic === TOPIC_SESSIONS && data.player_name) {
@@ -131,6 +137,11 @@ class MultiplayerSyncManager {
         this.supabaseChannel
           .on('broadcast', { event: 'system_reset' }, () => {
             this.handleIncomingSystemReset();
+          })
+          .on('broadcast', { event: 'game_config' }, (payload: any) => {
+            if (payload && payload.payload) {
+              this.handleIncomingConfig(payload.payload);
+            }
           })
           .on('broadcast', { event: 'telemetry' }, (payload: any) => {
             if (payload && payload.payload) {
@@ -498,6 +509,77 @@ class MultiplayerSyncManager {
     return () => {
       this.systemResetListeners.delete(callback);
     };
+  }
+
+  // Listen to game config changes (e.g., caseAccessMode: 'single' | 'multi')
+  public onGameConfigChange(callback: (config: { caseAccessMode: 'single' | 'multi' }) => void): () => void {
+    this.configListeners.add(callback);
+    return () => {
+      this.configListeners.delete(callback);
+    };
+  }
+
+  // Handle incoming game config update from Admin
+  private handleIncomingConfig(config: { caseAccessMode?: 'single' | 'multi' } | any) {
+    if (!config || !config.caseAccessMode) return;
+    const mode = config.caseAccessMode;
+    console.log('⚙️ GAME CONFIG UPDATE RECEIVED:', mode);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dts_admin_case_access_mode', mode);
+    }
+
+    this.configListeners.forEach((cb) => {
+      try {
+        cb({ caseAccessMode: mode });
+      } catch (err) {
+        console.warn('Config listener error:', err);
+      }
+    });
+  }
+
+  // Admin triggers global game configuration update
+  public broadcastGameConfig(config: { caseAccessMode: 'single' | 'multi' }) {
+    this.handleIncomingConfig(config);
+
+    // 1. MQTT
+    if (this.mqttClient && this.mqttClient.connected) {
+      try {
+        this.mqttClient.publish(
+          TOPIC_CONFIG,
+          JSON.stringify({ type: 'GAME_CONFIG', config, timestamp: Date.now() }),
+          { qos: 1, retain: true }
+        );
+      } catch (e) {
+        console.warn('MQTT config publish error:', e);
+      }
+    }
+
+    // 2. Local BroadcastChannel
+    if (this.localBroadcastChannel) {
+      try {
+        this.localBroadcastChannel.postMessage({
+          __dts_config: true,
+          config,
+          timestamp: Date.now(),
+        });
+      } catch (e) {
+        console.warn('BroadcastChannel config error:', e);
+      }
+    }
+
+    // 3. Supabase Realtime Broadcast
+    if (this.supabaseChannel) {
+      try {
+        this.supabaseChannel.send({
+          type: 'broadcast',
+          event: 'game_config',
+          payload: config,
+        });
+      } catch (e) {
+        console.warn('Supabase config broadcast error:', e);
+      }
+    }
   }
 
   // Handle incoming system reset from Admin

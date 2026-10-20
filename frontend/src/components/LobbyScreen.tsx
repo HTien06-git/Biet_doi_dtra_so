@@ -3,11 +3,11 @@
 // ============================================================================
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, Star, Search, LogOut, ChevronRight, Trophy, Puzzle, Shield,
-  ShieldCheck, ExternalLink, Settings, MoreVertical
+  ShieldCheck, ExternalLink, Settings, MoreVertical, Lock, LockOpen, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useGame } from '@/lib/gameStore';
@@ -23,7 +23,58 @@ export default function LobbyScreen() {
   const { state, dispatch } = useGame();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [lockAlert, setLockAlert] = useState<{ isOpen: boolean; message: string; caseId?: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Admin Game Mode Setting (single case vs multi cases)
+  const [caseAccessMode, setCaseAccessMode] = useState<'single' | 'multi'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dts_admin_case_access_mode');
+      return (saved === 'single' || saved === 'multi') ? saved : 'multi';
+    }
+    return 'multi';
+  });
+
+  // Fetch initial config from server and listen to realtime updates from Admin
+  useEffect(() => {
+    fetch('/api/admin/config')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.caseAccessMode) {
+          setCaseAccessMode(data.caseAccessMode);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('dts_admin_case_access_mode', data.caseAccessMode);
+          }
+        }
+      })
+      .catch(() => {});
+
+    const unsub = multiplayerSync.onGameConfigChange((cfg) => {
+      setCaseAccessMode(cfg.caseAccessMode);
+    });
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  // Xác định vụ án mà người chơi đã chọn trong chế độ 1 vụ án
+  const chosenSingleCaseId = useMemo(() => {
+    if (typeof window !== 'undefined' && state.playerName) {
+      const saved = localStorage.getItem(`dts_chosen_single_case_${state.playerName.trim().toLowerCase()}`);
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    }
+    // Tìm vụ án đầu tiên người chơi đã có tiến trình thực tế
+    for (const c of CASES_DATA) {
+      const p = state.caseProgress[c.id];
+      if (p && (p.isCompleted || (p.stationsCompleted || 0) > 0 || (p.totalScore || 0) > 0 || p.startTime)) {
+        return c.id;
+      }
+    }
+    return null;
+  }, [state.playerName, state.caseProgress]);
 
   // Close menu when tapping outside
   useEffect(() => {
@@ -42,50 +93,24 @@ export default function LobbyScreen() {
   const totalClues = Object.values(state.caseProgress).reduce((sum, cp) => sum + cp.cluesCollected, 0);
   const completedCases = Object.values(state.caseProgress).filter((cp) => cp.isCompleted).length;
 
-  // Cập nhật hiện diện trực tuyến khi vào Lobby và xử lý khi người chơi tắt trình duyệt
-  useEffect(() => {
-    if (!state.playerName) return;
-
-    multiplayerSync.registerDevice({
-      playerName: state.playerName,
-      teamCode: state.teamCode,
-      caseId: 0,
-      stationId: 0,
-      score: totalScore,
-    });
-
-    const handleBeforeUnload = () => {
-      multiplayerSync.markDeviceOffline({
-        playerName: state.playerName,
-        teamCode: state.teamCode,
-        caseId: 0,
-        stationId: 0,
-        score: totalScore,
-      });
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(
-          '/api/sessions',
-          JSON.stringify({
-            action: 'leave',
-            player_name: state.playerName,
-            team_code: state.teamCode,
-            is_active: false,
-            status: 'left',
-          })
-        );
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handleBeforeUnload);
-    };
-  }, [state.playerName, state.teamCode, totalScore]);
-
   const handleSelectCase = (caseId: number) => {
+    // Kiểm tra quy chế Khóa vụ án khi Admin bật chế độ single (chỉ 1 vụ án duy nhất)
+    if (caseAccessMode === 'single' && chosenSingleCaseId !== null && chosenSingleCaseId !== caseId) {
+      sounds.playWrong();
+      const chosenCase = CASES_DATA.find((c) => c.id === chosenSingleCaseId);
+      setLockAlert({
+        isOpen: true,
+        caseId,
+        message: `Theo quy chế giải đấu từ Ban Quản Trị, mỗi điều tra viên chỉ được phép phá 1 VỤ ÁN DUY NHẤT.\n\nBạn đã đăng ký tham gia Vụ án #${chosenSingleCaseId}: "${chosenCase?.title || ''}". Các vụ án còn lại đã được tự động khóa để bảo đảm tính công bằng.`,
+      });
+      return;
+    }
+
+    // Nếu người chơi chọn vụ án đầu tiên trong chế độ single, ghi nhớ lại
+    if (caseAccessMode === 'single' && chosenSingleCaseId === null && typeof window !== 'undefined' && state.playerName) {
+      localStorage.setItem(`dts_chosen_single_case_${state.playerName.trim().toLowerCase()}`, caseId.toString());
+    }
+
     sounds.playClick();
     const caseProg = state.caseProgress[caseId];
     if (caseProg?.isCompleted) {
@@ -272,6 +297,40 @@ export default function LobbyScreen() {
           </div>
         </div>
 
+        {/* Mode Status Banner: Thông báo chế độ truy cập do Admin cài đặt */}
+        <div className={`p-3.5 rounded-2xl border-2 flex items-center justify-between gap-3 text-xs font-bold transition-all ${
+          caseAccessMode === 'single'
+            ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E]'
+            : 'bg-[#EFF6FF] border-[#3B82F6] text-[#1D4ED8]'
+        }`}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              caseAccessMode === 'single' ? 'bg-[#D97706] text-white' : 'bg-[#3B82F6] text-white'
+            }`}>
+              {caseAccessMode === 'single' ? <Lock className="w-4 h-4" /> : <LockOpen className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <span className="font-display font-black uppercase text-[11px] block">
+                {caseAccessMode === 'single' ? 'QUY CHẾ: CHẾ ĐỘ THI ĐẤU 1 VỤ ÁN DUY NHẤT' : 'CHẾ ĐỘ TỰ DO: PHÁ TẤT CẢ VỤ ÁN'}
+              </span>
+              <p className="text-[11px] font-semibold opacity-90 truncate">
+                {caseAccessMode === 'single'
+                  ? chosenSingleCaseId
+                    ? `Bạn đã đăng ký Vụ án #${chosenSingleCaseId}. Các vụ án khác đã tự động khóa.`
+                    : 'Hãy cân nhắc chọn 1 vụ án để phá. Sau khi chọn, các vụ khác sẽ tự động bị khóa!'
+                  : 'Người chơi được tự do tham gia phá tất cả 4 vụ án không giới hạn.'}
+              </p>
+            </div>
+          </div>
+          <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-black uppercase flex-shrink-0 border ${
+            caseAccessMode === 'single'
+              ? 'bg-[#FDE68A] text-[#78350F] border-[#D97706]'
+              : 'bg-[#DBEAFE] text-[#1E40AF] border-[#3B82F6]'
+          }`}>
+            {caseAccessMode === 'single' ? '🔒 1 VỤ ÁN' : '🔓 TẤT CẢ'}
+          </span>
+        </div>
+
         {/* Section Banner Gỗ Nâu Đậm Bắt Mắt */}
         <div className="game-wood-banner px-4 py-2.5 flex items-center justify-between text-xs sm:text-sm font-black uppercase tracking-wide">
           <div className="flex items-center gap-2">
@@ -286,19 +345,24 @@ export default function LobbyScreen() {
           {CASES_DATA.map((caseData, index) => {
             const progress = state.caseProgress[caseData.id];
             const isCompleted = progress?.isCompleted;
+            const isLocked = caseAccessMode === 'single' && chosenSingleCaseId !== null && chosenSingleCaseId !== caseData.id;
 
             return (
               <motion.div
                 key={caseData.id}
-                className={`game-card p-4 sm:p-5 cursor-pointer relative overflow-hidden transition-all ${
-                  isCompleted ? 'bg-[#F0FDF4]' : 'bg-white'
+                className={`game-card p-4 sm:p-5 relative overflow-hidden transition-all ${
+                  isLocked
+                    ? 'bg-[#F8FAFC] border-[#94A3B8] opacity-80 cursor-not-allowed shadow-none'
+                    : isCompleted
+                    ? 'bg-[#F0FDF4] cursor-pointer'
+                    : 'bg-white cursor-pointer'
                 }`}
                 onClick={() => handleSelectCase(caseData.id)}
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.08 }}
-                whileHover={{ scale: 1.015 }}
-                whileTap={{ scale: 0.99 }}
+                whileHover={!isLocked ? { scale: 1.015 } : undefined}
+                whileTap={!isLocked ? { scale: 0.99 } : undefined}
               >
                 {/* Stamp if completed */}
                 {isCompleted && (
@@ -307,18 +371,35 @@ export default function LobbyScreen() {
                   </div>
                 )}
 
+                {/* Lock Stamp / Badge */}
+                {isLocked && (
+                  <div className="absolute top-3 right-4 sm:right-6 border-2 border-[#D97706] text-[#B45309] bg-[#FEF3C7] font-display font-black text-[10px] px-2.5 py-1 rounded-xl uppercase shadow-sm flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>ĐÃ KHÓA (CHẾ ĐỘ 1 VỤ ÁN)</span>
+                  </div>
+                )}
+
                 <div className="flex items-start gap-4">
                   {/* Case Icon Avatar Badge */}
-                  <GameIcon
-                    type={getCaseIconType(caseData.id)}
-                    size="lg"
-                    theme={index === 0 ? 'ruby' : index === 1 ? 'sapphire' : index === 2 ? 'amber' : 'emerald'}
-                  />
+                  <div className="relative">
+                    <GameIcon
+                      type={getCaseIconType(caseData.id)}
+                      size="lg"
+                      theme={isLocked ? 'amber' : index === 0 ? 'ruby' : index === 1 ? 'sapphire' : index === 2 ? 'amber' : 'emerald'}
+                    />
+                    {isLocked && (
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#D97706] text-white flex items-center justify-center border-2 border-white shadow-sm">
+                        <Lock className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                  </div>
 
                   {/* Case Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="game-badge game-badge-yellow text-[10px]">
+                      <span className={`game-badge text-[10px] ${
+                        isLocked ? 'bg-[#E2E8F0] text-[#64748B] border-[#CBD5E1]' : 'game-badge-yellow'
+                      }`}>
                         HỒ SƠ {caseData.caseNumber}
                       </span>
                       <span className="text-xs font-bold text-[#64748B] truncate">
@@ -326,21 +407,27 @@ export default function LobbyScreen() {
                       </span>
                     </div>
 
-                    <h2 className="text-base sm:text-lg font-display font-black text-[#1E293B] mb-1 tracking-tight">
+                    <h2 className={`text-base sm:text-lg font-display font-black mb-1 tracking-tight ${
+                      isLocked ? 'text-[#64748B]' : 'text-[#1E293B]'
+                    }`}>
                       {caseData.title}
                     </h2>
 
-                    <p className="text-xs text-[#475569] line-clamp-2 leading-relaxed mb-3 font-medium">
-                      {caseData.description}
+                    <p className={`text-xs line-clamp-2 leading-relaxed mb-3 font-medium ${
+                      isLocked ? 'text-[#94A3B8]' : 'text-[#475569]'
+                    }`}>
+                      {isLocked
+                        ? 'Vụ án đã được tự động khóa theo cài đặt Ban Tổ Chức. Bạn chỉ được phá 1 vụ án đã đăng ký tham gia.'
+                        : caseData.description}
                     </p>
 
                     {/* Progress Stats */}
                     <div className="flex items-center justify-between text-xs font-black">
-                      <span className="flex items-center gap-1 text-[#B45309]">
+                      <span className={`flex items-center gap-1 ${isLocked ? 'text-[#94A3B8]' : 'text-[#B45309]'}`}>
                         <Search className="w-3.5 h-3.5 stroke-[3]" />
                         {progress?.cluesCollected || 0}/5 manh mối
                       </span>
-                      <span className="flex items-center gap-1 text-[#059669]">
+                      <span className={`flex items-center gap-1 ${isLocked ? 'text-[#94A3B8]' : 'text-[#059669]'}`}>
                         <Star className="w-3.5 h-3.5 fill-current" />
                         {progress?.totalScore || 0}/100 điểm
                       </span>
@@ -355,9 +442,14 @@ export default function LobbyScreen() {
                     </div>
                   </div>
 
-                  {/* Action Arrow / Completed Badge */}
+                  {/* Action Arrow / Completed Badge / Lock Icon */}
                   <div className="self-center flex-shrink-0">
-                    {isCompleted ? (
+                    {isLocked ? (
+                      <div className="px-3 py-1.5 rounded-xl bg-[#F1F5F9] border-2 border-[#CBD5E1] text-[#64748B] text-[10.5px] font-black uppercase flex items-center gap-1 shadow-sm whitespace-nowrap">
+                        <Lock className="w-3.5 h-3.5 text-[#94A3B8]" />
+                        <span>ĐÃ KHÓA</span>
+                      </div>
+                    ) : isCompleted ? (
                       <div className="px-3 py-1.5 rounded-xl bg-[#ECFDF5] border-2 border-[#059669] text-[#059669] text-[10.5px] font-black uppercase flex items-center gap-1 shadow-sm whitespace-nowrap">
                         <span>XEM KẾT QUẢ</span>
                         <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
@@ -393,7 +485,54 @@ export default function LobbyScreen() {
       <LeaderboardModal
         isOpen={showLeaderboard}
         onClose={() => setShowLeaderboard(false)}
+        highlightPlayer={{ name: state.playerName, teamCode: state.teamCode }}
       />
+
+      {/* Access Lock Alert Modal */}
+      <AnimatePresence>
+        {lockAlert && lockAlert.isOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="w-full max-w-md game-card bg-white border-3 border-[#1E293B] shadow-2xl p-5 sm:p-6 text-center space-y-4"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#FEF3C7] border-2 border-[#D97706] text-[#D97706] flex items-center justify-center shadow-[0_3px_0_#D97706]">
+                <Lock className="w-7 h-7" />
+              </div>
+
+              <div>
+                <h3 className="font-display font-black text-base uppercase text-[#0F172A]">
+                  VỤ ÁN ĐANG BỊ KHÓA
+                </h3>
+                <p className="text-xs font-bold text-[#64748B] mt-1">
+                  Quy chế thi đấu từ Ban Tổ Chức
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#FFF7ED] border border-[#FDBA74] text-xs font-semibold text-[#9A3412] leading-relaxed text-left whitespace-pre-line">
+                {lockAlert.message}
+              </div>
+
+              <button
+                onClick={() => {
+                  sounds.playClick();
+                  setLockAlert(null);
+                }}
+                className="w-full py-2.5 rounded-xl bg-[#191AFE] text-white font-display font-black text-xs uppercase shadow-[0_3px_0_#000088] active:translate-y-0.5 transition-all"
+              >
+                ĐÃ HIỂU QUY CHẾ
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
