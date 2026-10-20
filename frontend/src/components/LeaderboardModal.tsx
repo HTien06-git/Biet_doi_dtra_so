@@ -390,7 +390,7 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                     return (
                       <div
                         key={`${item.player_name}-${item.team_code}-${idx}`}
-                        className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
+                        className={`flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl border-2 transition-all ${
                           isCurrent
                             ? 'bg-[#FEF08A] border-[#D97706] shadow-[0_3px_0_#D97706]'
                             : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8] shadow-sm'
@@ -399,41 +399,45 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                         {getRankBadge(idx + 1)}
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-display font-black text-sm text-[#0F172A] truncate">
+                          {/* Dòng 1: Tên & Huy hiệu BẠN */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-display font-black text-xs sm:text-sm text-[#0F172A] truncate max-w-[130px] sm:max-w-[200px]" title={item.player_name}>
                               {item.player_name}
                             </span>
                             {isCurrent && (
-                              <span className="game-badge game-badge-yellow text-[9px] py-0 font-black">
+                              <span className="game-badge game-badge-yellow text-[8px] sm:text-[9px] py-0 px-1 font-black whitespace-nowrap">
                                 BẠN
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-bold text-[#64748B] mt-1 flex-wrap">
-                            <span className="flex items-center gap-1 bg-[#EFF6FF] text-[#1E40AF] px-2 py-0.5 rounded-md font-mono border border-[#BFDBFE]">
-                              <Users className="w-3 h-3" />
-                              {item.team_code}
+
+                          {/* Dòng 2: Mã đội, số vụ / số trạm, thời gian */}
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-bold text-[#64748B] mt-1 flex-wrap">
+                            <span className="flex items-center gap-1 bg-[#EFF6FF] text-[#1E40AF] px-1.5 py-0.5 rounded-md font-mono border border-[#BFDBFE] whitespace-nowrap">
+                              <Users className="w-3 h-3 flex-shrink-0" />
+                              <span>{item.team_code}</span>
                             </span>
                             {activeTab === 'all' && 'cases_completed' in item && (
-                              <span className="text-[#059669] flex items-center gap-1 font-semibold">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                {item.cases_completed} vụ hoàn thành
+                              <span className="text-[#059669] flex items-center gap-1 font-semibold whitespace-nowrap">
+                                <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                                <span>{item.cases_completed} vụ</span>
                               </span>
                             )}
                             {durationSec && durationSec > 0 && (
-                              <span className="text-[#191AFE] flex items-center gap-1 font-mono">
-                                <Clock className="w-3 h-3" />
-                                {Math.floor(durationSec / 60)}p {durationSec % 60}s
+                              <span className="text-[#191AFE] flex items-center gap-1 font-mono whitespace-nowrap">
+                                <Clock className="w-3 h-3 flex-shrink-0" />
+                                <span>{Math.floor(durationSec / 60)}p {durationSec % 60}s</span>
                               </span>
                             )}
                           </div>
                         </div>
 
-                        <div className="text-right flex-shrink-0">
-                          <div className="text-base sm:text-lg font-display font-black text-[#191AFE]">
-                            {totalScore} <span className="text-xs font-bold text-[#64748B]">đ</span>
+                        {/* Cột phải: Điểm số & Manh mối */}
+                        <div className="text-right flex-shrink-0 pl-1">
+                          <div className="text-base sm:text-lg font-display font-black text-[#191AFE] whitespace-nowrap leading-tight">
+                            {totalScore} <span className="text-[11px] sm:text-xs font-bold text-[#64748B]">đ</span>
                           </div>
-                          <div className="text-[10px] font-black text-[#B45309]">
+                          <div className="text-[9px] sm:text-[10px] font-black text-[#B45309] whitespace-nowrap mt-0.5">
                             🔍 {clues} manh mối
                           </div>
                         </div>
@@ -492,51 +496,51 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                         {/* Main Team Row */}
                         <div
                           onClick={() => toggleTeamExpand(team.team_code)}
-                          className="p-3.5 flex items-center gap-3 cursor-pointer hover:bg-[#F8FAFC]/80 transition-colors"
+                          className="p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 cursor-pointer hover:bg-[#F8FAFC]/80 transition-colors"
                         >
                           {getRankBadge(idx + 1)}
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-display font-black text-base text-[#0F172A] tracking-tight">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-display font-black text-sm sm:text-base text-[#0F172A] tracking-tight">
                                 ĐỘI {team.team_code}
                               </span>
                               {isHighlight && (
-                                <span className="game-badge game-badge-yellow text-[9px] py-0 font-black">
+                                <span className="game-badge game-badge-yellow text-[8px] sm:text-[9px] py-0 px-1 font-black whitespace-nowrap">
                                   ĐỘI CỦA BẠN
                                 </span>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-3 text-xs font-bold text-[#64748B] mt-1 flex-wrap">
-                              <span className="flex items-center gap-1 text-[#0F172A]">
-                                <Users className="w-3.5 h-3.5 text-[#191AFE]" />
-                                {team.uniqueMembersCount} thành viên
+                            <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs font-bold text-[#64748B] mt-1 flex-wrap">
+                              <span className="flex items-center gap-1 text-[#0F172A] whitespace-nowrap">
+                                <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#191AFE] flex-shrink-0" />
+                                <span>{team.uniqueMembersCount} thành viên</span>
                               </span>
-                              <span className="flex items-center gap-1 text-[#059669]">
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                {team.cases_completed} vụ hoàn tất
+                              <span className="flex items-center gap-1 text-[#059669] whitespace-nowrap">
+                                <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                                <span>{team.cases_completed} vụ hoàn tất</span>
                               </span>
-                              <span className="flex items-center gap-1 text-[#B45309]">
+                              <span className="flex items-center gap-1 text-[#B45309] whitespace-nowrap">
                                 🔍 {team.total_clues} manh mối
                               </span>
                             </div>
                           </div>
 
                           {/* Total Score & Expand toggle button */}
-                          <div className="text-right flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right flex items-center gap-1.5 sm:gap-2 flex-shrink-0 pl-1">
                             <div>
-                              <div className="text-xl sm:text-2xl font-display font-black text-[#191AFE]">
-                                {team.total_score} <span className="text-xs font-bold text-[#64748B]">đ</span>
+                              <div className="text-base sm:text-xl font-display font-black text-[#191AFE] whitespace-nowrap leading-tight">
+                                {team.total_score} <span className="text-[11px] sm:text-xs font-bold text-[#64748B]">đ</span>
                               </div>
-                              <span className="text-[10px] font-bold text-[#64748B]">
+                              <span className="text-[9px] sm:text-[10px] font-bold text-[#64748B] whitespace-nowrap">
                                 Tổng điểm đội
                               </span>
                             </div>
 
                             <button
                               type="button"
-                              className="p-1.5 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#475569] transition-all ml-1"
+                              className="p-1 sm:p-1.5 rounded-lg bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#475569] transition-all ml-0.5"
                               title="Xem chi tiết các thành viên đóng góp"
                             >
                               {isExpanded ? (
@@ -567,8 +571,45 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                               </div>
                             </div>
 
-                            {/* Danh sách thành viên đóng góp */}
-                            <div className="overflow-x-auto rounded-xl border border-[#CBD5E1] bg-white">
+                            {/* Danh sách thành viên đóng góp: Responsive Card trên Mobile, Table trên Tablet/Desktop */}
+                            {/* 1. Mobile Cards */}
+                            <div className="sm:hidden space-y-2">
+                              {team.members.map((m, mIdx) => (
+                                <div key={mIdx} className="p-2.5 rounded-xl border border-[#CBD5E1] bg-white space-y-1.5">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <span className="font-bold text-xs text-[#0F172A] truncate max-w-[150px]">
+                                      {m.player_name}
+                                    </span>
+                                    <span className="px-1.5 py-0.5 rounded bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-black text-[9px] whitespace-nowrap">
+                                      Vụ #{m.case_id}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-[10px] pt-1 border-t border-[#F1F5F9]">
+                                    <span className="font-bold text-[#64748B]">
+                                      {m.stations_completed || 0}/5 trạm
+                                    </span>
+                                    <span className="text-[#B45309] font-bold">
+                                      🔍 {m.clues_collected} manh mối
+                                    </span>
+                                    <span className="font-display font-black text-[#059669]">
+                                      +{m.total_score}đ
+                                    </span>
+                                    {m.is_completed ? (
+                                      <span className="px-1.5 py-0.2 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[8px] font-black whitespace-nowrap">
+                                        ✓ XONG
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.2 rounded-full bg-[#FEF2F2] border border-[#DC2626] text-[#991B1B] text-[8px] font-black whitespace-nowrap">
+                                        CHƯA XONG
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* 2. Desktop Table */}
+                            <div className="hidden sm:block overflow-x-auto rounded-xl border border-[#CBD5E1] bg-white">
                               <table className="w-full text-xs text-left">
                                 <thead className="bg-[#F1F5F9] text-[#475569] font-black uppercase text-[10px]">
                                   <tr>
@@ -581,43 +622,40 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#E2E8F0] font-semibold text-[#1E293B]">
-                                  {team.members.map((m, mIdx) => {
-                                    const mCase = CASES_DATA.find((c) => c.id === m.case_id);
-                                    return (
-                                      <tr key={mIdx} className="hover:bg-[#F8FAFC]">
-                                        <td className="py-2 px-3 font-bold text-[#0F172A]">
-                                          {m.player_name}
-                                        </td>
-                                        <td className="py-2 px-2 text-center">
-                                          <span className="px-1.5 py-0.5 rounded bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-black text-[10px]">
-                                            Vụ #{m.case_id}
+                                  {team.members.map((m, mIdx) => (
+                                    <tr key={mIdx} className="hover:bg-[#F8FAFC]">
+                                      <td className="py-2 px-3 font-bold text-[#0F172A]">
+                                        {m.player_name}
+                                      </td>
+                                      <td className="py-2 px-2 text-center">
+                                        <span className="px-1.5 py-0.5 rounded bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-black text-[10px] whitespace-nowrap">
+                                          Vụ #{m.case_id}
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-2 text-center font-bold whitespace-nowrap">
+                                        {m.stations_completed || 0}/5 trạm
+                                      </td>
+                                      <td className="py-2 px-3 text-center">
+                                        <span className="font-display font-black text-[#059669] whitespace-nowrap">
+                                          +{m.total_score}đ
+                                        </span>
+                                      </td>
+                                      <td className="py-2 px-2 text-center text-[#B45309] font-bold whitespace-nowrap">
+                                        🔍 {m.clues_collected}
+                                      </td>
+                                      <td className="py-2 px-2 text-center whitespace-nowrap">
+                                        {m.is_completed ? (
+                                          <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[9px] font-black">
+                                            ✓ PHÁ ÁN XONG
                                           </span>
-                                        </td>
-                                        <td className="py-2 px-2 text-center font-bold">
-                                          {m.stations_completed || 0}/5 trạm
-                                        </td>
-                                        <td className="py-2 px-3 text-center">
-                                          <span className="font-display font-black text-[#059669]">
-                                            +{m.total_score}đ
+                                        ) : (
+                                          <span className="px-2 py-0.5 rounded-full bg-[#FEF2F2] border border-[#DC2626] text-[#991B1B] text-[9px] font-black">
+                                            CHƯA HOÀN TẤT
                                           </span>
-                                        </td>
-                                        <td className="py-2 px-2 text-center text-[#B45309] font-bold">
-                                          🔍 {m.clues_collected}
-                                        </td>
-                                        <td className="py-2 px-2 text-center">
-                                          {m.is_completed ? (
-                                            <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] border border-[#059669] text-[#064E3B] text-[9px] font-black">
-                                              ✓ PHÁ ÁN XONG
-                                            </span>
-                                          ) : (
-                                            <span className="px-2 py-0.5 rounded-full bg-[#FEF2F2] border border-[#DC2626] text-[#991B1B] text-[9px] font-black">
-                                              CHƯA HOÀN TẤT
-                                            </span>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
