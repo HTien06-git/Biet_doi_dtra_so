@@ -130,7 +130,7 @@ export async function savePlayerSession(session: PlayerSession): Promise<void> {
     // Dynamic import to avoid circular dependency
     import('./multiplayerSync').then(({ multiplayerSync }) => {
       multiplayerSync.broadcastSession(enrichedSession);
-    }).catch(() => {});
+    }).catch(() => { });
   }
 }
 
@@ -220,9 +220,9 @@ function saveToLocalStorage(session: PlayerSession): void {
     if (typeof window === 'undefined') return;
     const sessions = getAllFromLocalStorage();
     const idx = sessions.findIndex(
-      (s) => s.player_name === session.player_name && 
-             s.team_code === session.team_code && 
-             s.case_id === session.case_id
+      (s) => s.player_name === session.player_name &&
+        s.team_code === session.team_code &&
+        s.case_id === session.case_id
     );
     if (idx >= 0) {
       sessions[idx] = session;

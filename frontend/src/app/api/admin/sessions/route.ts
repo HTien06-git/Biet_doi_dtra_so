@@ -23,8 +23,9 @@ export async function GET(req: Request) {
 
     // CHỈ LẤY DỮ LIỆU THẬT - Lọc bỏ dữ liệu ảo/demo và phiên trống ghost
     sessions = sessions.filter((s) => {
-      if (MOCK_TEAMS.has(s.team_code) || MOCK_NAMES.has(s.player_name)) return false;
-      if (!s.start_time && (s.total_score || 0) === 0 && (s.stations_completed || 0) === 0 && !s.is_completed) return false;
+      // Chỉ lấy phiên thực sự có tiến trình giải trạm (hoàn thành ít nhất 1 trạm, có điểm hoặc đã hoàn thành phá án)
+      const hasProgress = (s.total_score || 0) > 0 || (s.stations_completed || 0) > 0 || s.is_completed;
+      if (!hasProgress) return false;
       return true;
     });
 

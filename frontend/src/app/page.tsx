@@ -54,7 +54,7 @@ function GameContainer() {
             title={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
           >
             {soundEnabled ? (
-              <Volume2 className="w-4 h-4 text-[#1A1AFF]" />
+              <Volume2 className="w-4 h-4 text-[#191AFE]" />
             ) : (
               <VolumeX className="w-4 h-4 text-[#64748B]" />
             )}

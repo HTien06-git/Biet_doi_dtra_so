@@ -121,7 +121,7 @@ export default function WelcomeScreen() {
   return (
     <div className="min-h-screen bg-game-backdrop flex flex-col items-center justify-center p-4 relative overflow-hidden text-[#0F172A]">
       {/* Sunburst Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-[#1A1AFF]/10 pointer-events-none -z-10 blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-[#191AFE]/10 pointer-events-none -z-10 blur-3xl" />
 
       {/* Main Container */}
       <motion.div
@@ -174,7 +174,7 @@ export default function WelcomeScreen() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-display font-black uppercase text-[#0F172A] flex items-center gap-1.5">
-              <User className="w-4 h-4 text-[#1A1AFF]" />
+              <User className="w-4 h-4 text-[#191AFE]" />
               Tên Điều Tra Viên
             </label>
             <input
@@ -182,13 +182,13 @@ export default function WelcomeScreen() {
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="VD: Thám tử Minh, Hoàng Nam..."
-              className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] shadow-[0_2px_0_#1E293B]"
+              className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE] shadow-[0_2px_0_#1E293B]"
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-display font-black uppercase text-[#0F172A] flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-[#1A1AFF]" />
+              <Users className="w-4 h-4 text-[#191AFE]" />
               Mã Số Đội Thi Đấu
             </label>
             <input
@@ -196,11 +196,11 @@ export default function WelcomeScreen() {
               value={teamCode}
               onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
               placeholder="VD: CYBER-01, TEAM-A..."
-              className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] shadow-[0_2px_0_#1E293B] uppercase"
+              className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE] shadow-[0_2px_0_#1E293B] uppercase"
             />
           </div>
 
-          {/* 3D Tactile Primary Button #1A1AFF */}
+          {/* 3D Tactile Primary Button #191AFE */}
           <button
             onClick={handleStart}
             disabled={isLoading}
@@ -223,7 +223,7 @@ export default function WelcomeScreen() {
           <span>Đại Học / Học Viện An Toàn Số · 4 Vụ Án · 20 Trạm</span>
           <Link
             href="/admin"
-            className="hover:text-[#1A1AFF] underline flex items-center gap-1 transition-colors"
+            className="hover:text-[#191AFE] underline flex items-center gap-1 transition-colors"
           >
             <Settings className="w-3.5 h-3.5" />
             Quản trị Admin

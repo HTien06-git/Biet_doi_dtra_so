@@ -75,7 +75,7 @@ export default function AudioController({ className = '', showVolumeSlider = fal
               setVolume(val);
               if (isMuted && val > 0) toggleMute();
             }}
-            className="w-full h-1.5 bg-[#334155] rounded-lg appearance-none cursor-pointer accent-[#1A1AFF]"
+            className="w-full h-1.5 bg-[#334155] rounded-lg appearance-none cursor-pointer accent-[#191AFE]"
           />
           <span className="text-[10px] font-mono font-bold text-white w-6 text-right">
             {isMuted ? '0%' : `${Math.round(volume * 100)}%`}

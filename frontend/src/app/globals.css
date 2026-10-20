@@ -6,7 +6,7 @@
   --color-bg-primary: #E2E8F0;
   --color-bg-secondary: #F8FAFC;
   --color-bg-card: #FFFFFF;
-  --color-primary: #1A1AFF;
+  --color-primary: #191AFE;
   --color-border: #1E293B;
   --color-text-primary: #0F172A;
   --color-text-secondary: #64748B;
@@ -42,7 +42,7 @@ h1, h2, h3, h4, h5, h6 {
   background: #E2E8F0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1A1AFF;
+  background: #191AFE;
   border-radius: 4px;
   border: 2px solid #E2E8F0;
 }

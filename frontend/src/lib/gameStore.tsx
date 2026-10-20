@@ -136,19 +136,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'SELECT_CASE': {
       const caseId = action.payload;
-      const cp = { ...state.caseProgress };
-      if (cp[caseId] && !cp[caseId].startTime) {
-        cp[caseId] = {
-          ...cp[caseId],
-          startTime: new Date().toISOString(),
-        };
-      }
       return {
         ...state,
         currentCaseId: caseId,
         currentStationIndex: 0,
         currentScreen: 'stations',
-        caseProgress: cp,
         selectedAnswers: [],
         isAnswerChecked: false,
         showResultDialog: false,
@@ -446,7 +438,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const saveProgress = useCallback(async () => {
     if (!state.isLoggedIn) return;
     const activeCases = Object.values(state.caseProgress).filter(
-      (cp) => cp.startTime || cp.totalScore > 0 || cp.stationsCompleted > 0 || cp.caseId === state.currentCaseId
+      (cp) => cp.startTime || cp.totalScore > 0 || cp.stationsCompleted > 0
     );
     const promises = activeCases.map((cp) => {
       const session: PlayerSession = {

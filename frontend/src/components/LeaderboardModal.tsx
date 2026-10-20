@@ -134,8 +134,8 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
           >
-            {/* Header Xanh Điện #1A1AFF */}
-            <div className="bg-[#1A1AFF] border-b-4 border-[#000088] p-4 text-white flex items-center justify-between">
+            {/* Header Xanh Điện #191AFE */}
+            <div className="bg-[#191AFE] border-b-4 border-[#000088] p-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white">
                   <Trophy className="w-6 h-6 fill-current text-[#FDE047]" />

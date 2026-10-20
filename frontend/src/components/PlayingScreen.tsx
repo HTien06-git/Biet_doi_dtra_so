@@ -239,8 +239,8 @@ export default function PlayingScreen() {
 
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-8">
-      {/* 1. Header Bar Xanh Chủ Đạo #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
+      {/* 1. Header Bar Xanh Chủ Đạo #191AFE Chuẩn Thiết Kế */}
+      <header className="sticky top-0 z-30 bg-[#191AFE] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <button
@@ -337,7 +337,7 @@ export default function PlayingScreen() {
               </div>
             </div>
 
-            {/* BĂNG RÔN CÂU HỎI XANH CHỦ ĐẠO #1A1AFF DƯỚI ĐÁY KHUNG HÌNH */}
+            {/* BĂNG RÔN CÂU HỎI XANH CHỦ ĐẠO #191AFE DƯỚI ĐÁY KHUNG HÌNH */}
             <div className="game-blue-banner p-3.5 sm:p-4 text-center">
               <div className="text-[11px] font-black uppercase tracking-wider text-[#FDE047] mb-1 flex items-center justify-center gap-1">
                 <Star className="w-3.5 h-3.5 fill-current" />
@@ -389,7 +389,7 @@ export default function PlayingScreen() {
                     <div
                       className={`w-9 h-9 rounded-xl border-2 border-[#1E293B] flex items-center justify-center font-display font-black text-sm flex-shrink-0 shadow-[0_2px_0_#1E293B] ${
                         isSelected
-                          ? 'bg-[#1A1AFF] text-white border-[#000088]'
+                          ? 'bg-[#191AFE] text-white border-[#000088]'
                           : 'bg-[#F1F5F9] text-[#475569]'
                       }`}
                     >
@@ -411,7 +411,7 @@ export default function PlayingScreen() {
                       ) : (
                         <div
                           className={`w-5 h-5 rounded-md border-2 border-[#1E293B] flex items-center justify-center ${
-                            isSelected ? 'bg-[#1A1AFF] border-[#000088]' : 'bg-white'
+                            isSelected ? 'bg-[#191AFE] border-[#000088]' : 'bg-white'
                           }`}
                         >
                           {isSelected && <span className="font-black text-xs text-white">✓</span>}
@@ -440,7 +440,7 @@ export default function PlayingScreen() {
               </motion.div>
             )}
 
-            {/* NÚT BẤM XANH ĐIỆN #1A1AFF 3D TACTILE */}
+            {/* NÚT BẤM XANH ĐIỆN #191AFE 3D TACTILE */}
             {!isAlreadyCompleted && !state.showResultDialog && (
               <button
                 onClick={handleCheckAnswer}

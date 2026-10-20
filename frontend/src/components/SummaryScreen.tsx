@@ -31,7 +31,13 @@ export default function SummaryScreen() {
   }, []);
 
   const totalScore = progress?.totalScore || 0;
-  const cluesCount = progress?.cluesCollected || 0;
+  const stationsToDisplay = useMemo(() => caseData?.stations.slice(0, 4) || [], [caseData]);
+  const cluesCount = useMemo(() => {
+    return stationsToDisplay.filter((_, idx) => progress?.stations[idx]?.clueUnlocked).length;
+  }, [stationsToDisplay, progress]);
+  const stationsCompletedCount = useMemo(() => {
+    return Math.min(progress?.stationsCompleted || 4, 4);
+  }, [progress]);
 
   const rankInfo = useMemo(() => {
     if (totalScore >= 90) {
@@ -120,8 +126,8 @@ export default function SummaryScreen() {
 
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-16">
-      {/* Header Bar Xanh Điện #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
+      {/* Header Bar Xanh Điện #191AFE Chuẩn Thiết Kế */}
+      <header className="sticky top-0 z-30 bg-[#191AFE] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           {/* Cụm trái: Huy hiệu Vụ án & Tiêu đề phá án */}
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
@@ -199,15 +205,15 @@ export default function SummaryScreen() {
           {/* 4 Metric Badges including Duration */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t-2 border-[#1E293B]/20">
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#1A1AFF]">{totalScore}/100</span>
+              <span className="text-xl sm:text-2xl font-display font-black text-[#191AFE]">{totalScore}/100</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Tổng Điểm</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#D97706]">{cluesCount}/5</span>
+              <span className="text-xl sm:text-2xl font-display font-black text-[#D97706]">{cluesCount}/4</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Manh Mối</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#059669]">5/5</span>
+              <span className="text-xl sm:text-2xl font-display font-black text-[#059669]">{stationsCompletedCount}/4</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Trạm Đã Qua</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
@@ -222,7 +228,7 @@ export default function SummaryScreen() {
         {/* BTC Confirmation Code Box */}
         <div className="game-card p-5 bg-[#F8FAFC] border-[#1E293B] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-black uppercase text-[#1A1AFF]">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-black uppercase text-[#191AFE]">
               <ShieldCheck className="w-4 h-4" />
               MÃ BÁO CÁO KẾT QUẢ CHO BAN TỔ CHỨC
             </div>
@@ -303,18 +309,18 @@ export default function SummaryScreen() {
           </div>
         </div>
 
-        {/* Evidence Board (5 Clues Unlocked) */}
+        {/* Evidence Board (4 Clues Unlocked) */}
         <div className="game-card p-5 bg-white space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-black text-sm uppercase text-[#3E2723] flex items-center gap-2">
               <Eye className="w-4 h-4 text-[#D97706]" />
-              SỔ TAY BẰNG CHỨNG ĐÃ THU THẬP ({cluesCount}/5)
+              SỔ TAY BẰNG CHỨNG ĐÃ THU THẬP ({cluesCount}/4)
             </h3>
             <span className="text-[11px] font-bold text-[#64748B]">Bấm vào để đọc chi tiết</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-            {caseData.stations.map((st, idx) => {
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {stationsToDisplay.map((st, idx) => {
               const isUnlocked = progress.stations[idx]?.clueUnlocked;
               return (
                 <button

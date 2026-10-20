@@ -1,6 +1,6 @@
 /* ============================================================================
-   CASE HUNTER 2D GAME STYLESHEET (SILVER METALLIC & ELECTRIC BLUE #1A1AFF)
-   Tông màu bạc sáng hiện đại, xanh chủ đạo #1A1AFF, nút bấm tactile game 3D
+   CASE HUNTER 2D GAME STYLESHEET (SILVER METALLIC & ELECTRIC BLUE #191AFE)
+   Tông màu bạc sáng hiện đại, xanh chủ đạo #191AFE, nút bấm tactile game 3D
    ============================================================================ */
 
 :root {
@@ -12,7 +12,7 @@
   --game-bg-card: #FFFFFF;
 
   /* Primary Electric Blue */
-  --game-primary: #1A1AFF;
+  --game-primary: #191AFE;
   --game-primary-light: #4D4DFF;
   --game-primary-dark: #0000CC;
   --game-primary-shadow: #000088;
@@ -33,7 +33,7 @@
   --game-red-dark: #DC2626;
   --game-green: #10B981;
   --game-green-dark: #059669;
-  --game-blue: #1A1AFF;
+  --game-blue: #191AFE;
 
   /* Typography Colors */
   --game-text-main: #0F172A;
@@ -92,18 +92,18 @@
   position: relative;
 }
 
-/* Header Game Bar Xanh Điện #1A1AFF */
+/* Header Game Bar Xanh Điện #191AFE */
 .game-header-bar {
-  background: linear-gradient(180deg, #2E2EFF 0%, #1A1AFF 100%);
+  background: linear-gradient(180deg, #2E2EFF 0%, #191AFE 100%);
   border-bottom: 4px solid #000088;
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(26, 26, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(25, 26, 254, 0.25);
 }
 
-/* Băng rôn câu hỏi Xanh Chủ Đạo #1A1AFF */
+/* Băng rôn câu hỏi Xanh Chủ Đạo #191AFE */
 .game-blue-banner,
 .game-yellow-banner {
-  background: linear-gradient(180deg, #3333FF 0%, #1A1AFF 100%);
+  background: linear-gradient(180deg, #3333FF 0%, #191AFE 100%);
   border: 3.5px solid #000088;
   border-radius: 18px;
   color: #FFFFFF;
@@ -115,7 +115,7 @@
 
 /* Băng rôn tiêu đề nội dung bạc xanh */
 .game-wood-banner {
-  background: linear-gradient(180deg, #2E2EFF 0%, #1A1AFF 100%);
+  background: linear-gradient(180deg, #2E2EFF 0%, #191AFE 100%);
   border: 3px solid #000088;
   border-radius: 16px;
   color: #FFFFFF;
@@ -157,10 +157,10 @@
   box-shadow: 0 1px 0 var(--game-shadow-color) !important;
 }
 
-/* Nút Bấm Xanh Điện #1A1AFF (Primary) */
+/* Nút Bấm Xanh Điện #191AFE (Primary) */
 .btn-game-amber,
 .btn-game-primary {
-  background: linear-gradient(180deg, #3838FF 0%, #1A1AFF 100%);
+  background: linear-gradient(180deg, #3838FF 0%, #191AFE 100%);
   color: #FFFFFF;
   border-color: #000088;
   box-shadow: 0 6px 0 #000066;
@@ -191,7 +191,7 @@
 }
 
 .btn-game-blue {
-  background: linear-gradient(180deg, #3B82F6 0%, #1A1AFF 100%);
+  background: linear-gradient(180deg, #3B82F6 0%, #191AFE 100%);
   color: #FFFFFF;
   border-color: #000088;
   box-shadow: 0 6px 0 #000066;
@@ -229,8 +229,8 @@
 
 .game-answer-card.selected {
   background: #EEF2FF;
-  border-color: #1A1AFF;
-  box-shadow: 0 5px 0 #1A1AFF;
+  border-color: #191AFE;
+  box-shadow: 0 5px 0 #191AFE;
 }
 
 .game-answer-card.correct {
@@ -262,7 +262,7 @@
 }
 
 .game-badge-blue {
-  background: #1A1AFF;
+  background: #191AFE;
   color: #FFFFFF;
   border-color: #000088;
 }
@@ -283,7 +283,7 @@
 }
 
 .game-badge-wood {
-  background: #1A1AFF;
+  background: #191AFE;
   color: #FFFFFF;
   border-color: #000088;
 }

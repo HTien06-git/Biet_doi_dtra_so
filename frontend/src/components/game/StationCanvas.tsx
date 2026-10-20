@@ -49,7 +49,7 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
     switch (type) {
       case 'sos': return <ShieldAlert className="w-4 h-4 text-[#EF4444]" />;
       case 'pdf': return <FileText className="w-4 h-4 text-[#DC2626]" />;
-      case 'qr': return <QrCode className="w-4 h-4 text-[#1A1AFF]" />;
+      case 'qr': return <QrCode className="w-4 h-4 text-[#191AFE]" />;
       case 'chat_log': return <MessageSquare className="w-4 h-4 text-[#2563EB]" />;
       case 'call_log': return <PhoneCall className="w-4 h-4 text-[#D97706]" />;
       default: return <FileText className="w-4 h-4 text-[#059669]" />;
@@ -81,7 +81,7 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
         <div className="relative bg-white border-2 sm:border-3 border-[#1E293B] rounded-xl sm:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-[0_3px_0_#1E293B] sm:shadow-[0_4px_0_#1E293B]">
           {/* Dialogue Tag */}
           <div className="flex items-center gap-1.5 mb-1">
-            <span className="inline-block px-1.5 py-0.2 rounded-md bg-[#1A1AFF] text-white font-display font-black text-[8px] sm:text-[9px] uppercase tracking-wider">
+            <span className="inline-block px-1.5 py-0.2 rounded-md bg-[#191AFE] text-white font-display font-black text-[8px] sm:text-[9px] uppercase tracking-wider">
               {config.character.name}
             </span>
             {config.character.roleTitle && (
@@ -117,13 +117,13 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
             transition={{ delay: idx * 0.08 + 0.05 }}
             whileHover={{ scale: 1.04, x: -2 }}
             whileTap={{ scale: 0.96 }}
-            className="group relative flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/95 border-2 border-[#1E293B] shadow-[0_2px_0_#1E293B] hover:border-[#1A1AFF] hover:bg-[#F8FAFC] transition-all text-left backdrop-blur-sm cursor-pointer w-auto max-w-[130px] sm:max-w-[175px]"
+            className="group relative flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/95 border-2 border-[#1E293B] shadow-[0_2px_0_#1E293B] hover:border-[#191AFE] hover:bg-[#F8FAFC] transition-all text-left backdrop-blur-sm cursor-pointer w-auto max-w-[130px] sm:max-w-[175px]"
             title="Click để soi chi tiết bằng chứng"
           >
             {/* Pulsing radar dot for interactivity */}
             <span className="absolute -top-1 -right-1 flex h-2 sm:h-2.5 w-2 sm:w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1A1AFF] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-[#1A1AFF]"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#191AFE] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-[#191AFE]"></span>
             </span>
 
             <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-lg bg-[#EFF6FF] border border-[#1E293B] flex items-center justify-center flex-shrink-0 group-hover:bg-[#DBEAFE] transition-colors">
@@ -131,11 +131,11 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
             </div>
 
             <div className="min-w-0 pr-0.5">
-              <span className="text-[9px] sm:text-[11px] font-display font-black text-[#0F172A] block leading-tight truncate group-hover:text-[#1A1AFF] transition-colors">
+              <span className="text-[9px] sm:text-[11px] font-display font-black text-[#0F172A] block leading-tight truncate group-hover:text-[#191AFE] transition-colors">
                 {clue.label}
               </span>
               <span className="text-[7.5px] sm:text-[9px] font-bold text-[#64748B] flex items-center gap-0.5">
-                <Search className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#1A1AFF]" /> Soi chi tiết
+                <Search className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-[#191AFE]" /> Soi chi tiết
               </span>
             </div>
           </motion.button>
@@ -162,11 +162,11 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
               {/* Sticky Top Bar with Title & Close Button */}
               <div className="flex items-center justify-between border-b-2 border-[#CBD5E1] pb-2.5">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#1A1AFF] text-white flex items-center justify-center shadow-[0_2px_0_#000088] flex-shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#191AFE] text-white flex items-center justify-center shadow-[0_2px_0_#000088] flex-shrink-0">
                     <Eye className="w-4 h-4 stroke-[2.5]" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-black uppercase text-[#1A1AFF] tracking-wider block">
+                    <span className="text-[10px] font-black uppercase text-[#191AFE] tracking-wider block">
                       GIÁM ĐỊNH KỸ THUẬT SỐ
                     </span>
                     <h4 className="font-display font-black text-sm sm:text-base text-[#0F172A]">
@@ -222,7 +222,7 @@ export default function StationCanvas({ caseId, stationIndex, onClueInspected }:
                     <ul className="space-y-1.5">
                       {selectedClue.actionPayload.details.map((detail, dIdx) => (
                         <li key={dIdx} className="text-xs font-bold text-[#0F172A] flex items-start gap-2">
-                          <span className="text-[#1A1AFF] font-black text-sm leading-none">▸</span>
+                          <span className="text-[#191AFE] font-black text-sm leading-none">▸</span>
                           <span>{detail}</span>
                         </li>
                       ))}
@@ -318,7 +318,7 @@ function SceneBackground({ theme }: { theme: BackgroundTheme }) {
           <rect x="360" y="180" width="180" height="110" rx="8" fill="#FFFDF5" stroke="#1E293B" strokeWidth="3.5" />
           {/* Laptop */}
           <polygon points="410,210 465,210 480,235 395,235" fill="#94A3B8" stroke="#1E293B" strokeWidth="3" />
-          <rect x="410" y="165" width="55" height="45" rx="4" fill="#1A1AFF" stroke="#1E293B" strokeWidth="3" />
+          <rect x="410" y="165" width="55" height="45" rx="4" fill="#191AFE" stroke="#1E293B" strokeWidth="3" />
           <rect x="415" y="170" width="45" height="35" rx="2" fill="#60A5FA" />
           {/* Desk Lamp */}
           <path d="M505,185 L505,150 L485,155" fill="none" stroke="#1E293B" strokeWidth="3.5" strokeLinecap="round" />
@@ -374,7 +374,7 @@ function SceneBackground({ theme }: { theme: BackgroundTheme }) {
           <text x="365" y="41" fill="#38BDF8" fontSize="9" fontFamily="monospace" fontWeight="bold">5G 82%</text>
 
           {/* Fake Messaging App Header */}
-          <rect x="190" y="49" width="220" height="38" fill="#1A1AFF" />
+          <rect x="190" y="49" width="220" height="38" fill="#191AFE" />
           <circle cx="215" cy="68" r="12" fill="#FDE047" />
           <text x="235" y="66" fill="#FFFFFF" fontSize="11" fontWeight="bold" fontFamily="sans-serif">BAN CHUYÊN ÁN C02</text>
           <text x="235" y="78" fill="#93C5FD" fontSize="8" fontFamily="sans-serif">Đang hoạt động...</text>
@@ -402,7 +402,7 @@ function SceneBackground({ theme }: { theme: BackgroundTheme }) {
 
           {/* ATM / Online Banking Screen UI */}
           <rect x="120" y="35" width="360" height="305" rx="18" fill="#FFFFFF" stroke="#1E293B" strokeWidth="4" />
-          <rect x="120" y="35" width="360" height="45" rx="14" fill="#1A1AFF" />
+          <rect x="120" y="35" width="360" height="45" rx="14" fill="#191AFE" />
           <text x="140" y="63" fill="#FFFFFF" fontSize="13" fontWeight="bold" fontFamily="sans-serif">CỔNG THANH TOÁN 24/7 - XÁC THỰC</text>
 
           {/* Red Alert warning bar */}
@@ -413,7 +413,7 @@ function SceneBackground({ theme }: { theme: BackgroundTheme }) {
           <rect x="135" y="135" width="330" height="90" rx="10" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="2" />
           <text x="150" y="158" fill="#64748B" fontSize="10" fontWeight="bold">TÀI KHOẢN THỤ HƯỞNG:</text>
           <text x="150" y="178" fill="#0F172A" fontSize="14" fontWeight="bold" fontFamily="monospace">10488923412 - MB BANK</text>
-          <text x="150" y="198" fill="#1A1AFF" fontSize="12" fontWeight="bold">CHỦ TK: NGUYEN VAN THANG (CÁ NHÂN)</text>
+          <text x="150" y="198" fill="#191AFE" fontSize="12" fontWeight="bold">CHỦ TK: NGUYEN VAN THANG (CÁ NHÂN)</text>
 
           {/* Warning Stamp */}
           <rect x="180" y="240" width="240" height="40" rx="8" fill="#DC2626" />
@@ -430,9 +430,9 @@ function SceneBackground({ theme }: { theme: BackgroundTheme }) {
           {/* Cyber grid */}
           <defs>
             <linearGradient id="cyber_beam" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#1A1AFF" stopOpacity="0" />
+              <stop offset="0%" stopColor="#191AFE" stopOpacity="0" />
               <stop offset="50%" stopColor="#38BDF8" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#1A1AFF" stopOpacity="0" />
+              <stop offset="100%" stopColor="#191AFE" stopOpacity="0" />
             </linearGradient>
           </defs>
           <rect y="180" width="600" height="4" fill="url(#cyber_beam)" />
@@ -522,7 +522,7 @@ function DynamicCharacterSprite({
           <g id="fedora">
             <ellipse cx="70" cy="38" rx="46" ry="12" fill="#92400E" stroke="#1E293B" strokeWidth="4" />
             <path d="M38,36 C38,15 102,15 102,36 Z" fill="#B45309" stroke="#1E293B" strokeWidth="4" />
-            <rect x="39" y="32" width="62" height="8" fill="#1A1AFF" />
+            <rect x="39" y="32" width="62" height="8" fill="#191AFE" />
           </g>
         ) : (
           // CARTOON HAIR

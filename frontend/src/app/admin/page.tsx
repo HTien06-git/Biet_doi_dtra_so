@@ -270,14 +270,21 @@ export default function AdminDashboardPage() {
   const MOCK_TEAMS = useMemo(() => new Set(['CYBER-ALPHA', 'SEC-SHIELD', 'FIREWALL-07', 'DEFENDER-X', 'ZERO-TRUST']), []);
   const MOCK_NAMES = useMemo(() => new Set(['Nguyễn Văn An', 'Trần Thị Mai', 'Lê Hoàng Minh', 'Phạm Quốc Hùng', 'Hoàng Thùy Linh']), []);
 
-  // Filtered Sessions (CHỈ LẤY DỮ LIỆU THẬT)
+  // Filtered Sessions (CHỈ LẤY DỮ LIỆU THẬT & ĐÃ BẮT ĐẦU GIẢI TRẠM)
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
       // 1. Loại bỏ dữ liệu ảo/demo
       if (MOCK_TEAMS.has(s.team_code) || MOCK_NAMES.has(s.player_name)) return false;
 
-      // 2. Loại bỏ các phiên trống chưa bắt đầu (ghost sessions)
-      if (!s.start_time && (s.total_score || 0) === 0 && (s.stations_completed || 0) === 0 && !s.is_completed) {
+      // 2. Chỉ ghi nhận khi người chơi THỰC SỰ tham gia giải trạm (có hoàn thành trạm, có điểm, đã phá án hoặc đang trực tiếp thi đấu)
+      const isOnline = isPlayerOnline(s.player_name);
+      const hasRealParticipation =
+        (s.stations_completed || 0) > 0 ||
+        (s.total_score || 0) > 0 ||
+        s.is_completed ||
+        (isOnline && s.status === 'playing');
+
+      if (!hasRealParticipation) {
         return false;
       }
 
@@ -298,7 +305,7 @@ export default function AdminDashboardPage() {
 
       return matchQuery && matchCase && matchStatus;
     });
-  }, [sessions, searchQuery, selectedCaseId, filterStatus, MOCK_TEAMS, MOCK_NAMES]);
+  }, [sessions, searchQuery, selectedCaseId, filterStatus, MOCK_TEAMS, MOCK_NAMES, isPlayerOnline]);
 
   // 5-station challenge Leaderboard (Fastest to Slowest)
   const leaderboard5Stations = useMemo(() => {
@@ -370,8 +377,13 @@ export default function AdminDashboardPage() {
   const stats = useMemo(() => {
     const realSessions = sessions.filter((s) => {
       if (MOCK_TEAMS.has(s.team_code) || MOCK_NAMES.has(s.player_name)) return false;
-      if (!s.start_time && (s.total_score || 0) === 0 && (s.stations_completed || 0) === 0 && !s.is_completed) return false;
-      return true;
+      const isOnline = isPlayerOnline(s.player_name);
+      return (
+        (s.stations_completed || 0) > 0 ||
+        (s.total_score || 0) > 0 ||
+        s.is_completed ||
+        (isOnline && s.status === 'playing')
+      );
     });
 
     // 1. TỔNG NGƯỜI CHƠI: Đếm theo số lượng điều tra viên duy nhất (không trùng lặp tên)
@@ -456,7 +468,7 @@ export default function AdminDashboardPage() {
         `"${item.player_name.replace(/"/g, '""')}"`,
         `"${item.team_code.replace(/"/g, '""')}"`,
         `Vụ án #${item.case_id}`,
-        `${item.stations_completed}/5`,
+        `"${item.stations_completed}/5 Trạm (${item.is_completed || item.stations_completed === 5 ? 'Đã xong 5/5' : `Trạm ${Math.min(5, (item.stations_completed || 0) + 1)}`})"`,
         item.duration_seconds || 0,
         `"${durationMinsSecs}"`,
         item.total_score,
@@ -490,12 +502,12 @@ export default function AdminDashboardPage() {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
         >
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-[#1A1AFF] border-3 border-[#000088] flex items-center justify-center text-white shadow-[0_4px_0_#000066]">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-[#191AFE] border-3 border-[#000088] flex items-center justify-center text-white shadow-[0_4px_0_#000066]">
             <Shield className="w-8 h-8 text-white stroke-[2.5]" />
           </div>
 
           <div>
-            <span className="px-3 py-1 rounded-full bg-[#1A1AFF]/10 text-[#1A1AFF] font-black text-xs uppercase tracking-wider">
+            <span className="px-3 py-1 rounded-full bg-[#191AFE]/10 text-[#191AFE] font-black text-xs uppercase tracking-wider">
               BẢO MẬT HỆ THỐNG
             </span>
             <h1 className="text-2xl font-display font-black text-[#0F172A] mt-2">
@@ -520,7 +532,7 @@ export default function AdminDashboardPage() {
           <form onSubmit={handleLogin} className="space-y-4 text-left">
             <div className="space-y-1.5">
               <label className="text-xs font-display font-black uppercase text-[#0F172A] flex items-center gap-1.5">
-                <Key className="w-4 h-4 text-[#1A1AFF]" />
+                <Key className="w-4 h-4 text-[#191AFE]" />
                 Mật Khẩu Quản Trị (Admin PIN / Password)
               </label>
               <input
@@ -528,7 +540,7 @@ export default function AdminDashboardPage() {
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="Nhập mã PIN hoặc mật khẩu..."
-                className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF] shadow-[0_2px_0_#1E293B]"
+                className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE] shadow-[0_2px_0_#1E293B]"
                 autoFocus
               />
             </div>
@@ -543,7 +555,7 @@ export default function AdminDashboardPage() {
           </form>
 
           <div className="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs font-bold text-[#64748B]">
-            <Link href="/" className="hover:text-[#1A1AFF] flex items-center gap-1">
+            <Link href="/" className="hover:text-[#191AFE] flex items-center gap-1">
               <ArrowLeft className="w-3.5 h-3.5" />
               Về trang game
             </Link>
@@ -582,8 +594,8 @@ export default function AdminDashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Admin Header Bar #1A1AFF */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-4 py-3 shadow-lg text-white">
+      {/* Admin Header Bar #191AFE */}
+      <header className="sticky top-0 z-30 bg-[#191AFE] border-b-4 border-[#000088] px-4 py-3 shadow-lg text-white">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Link
@@ -655,7 +667,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <p className="text-2xl sm:text-3xl font-display font-black text-[#1A1AFF]">
+              <p className="text-2xl sm:text-3xl font-display font-black text-[#191AFE]">
                 {stats.totalParticipants}
               </p>
               {stats.activeCount > 0 ? (
@@ -721,7 +733,7 @@ export default function AdminDashboardPage() {
               onClick={() => setActiveTab('leaderboard')}
               className={`px-3 py-1.5 rounded-lg text-xs font-black font-display uppercase tracking-wide transition-all ${
                 activeTab === 'leaderboard'
-                  ? 'bg-[#1A1AFF] text-white shadow-sm'
+                  ? 'bg-[#191AFE] text-white shadow-sm'
                   : 'text-[#475569] hover:text-[#0F172A]'
               }`}
             >
@@ -731,7 +743,7 @@ export default function AdminDashboardPage() {
               onClick={() => setActiveTab('participants')}
               className={`px-3 py-1.5 rounded-lg text-xs font-black font-display uppercase tracking-wide transition-all ${
                 activeTab === 'participants'
-                  ? 'bg-[#1A1AFF] text-white shadow-sm'
+                  ? 'bg-[#191AFE] text-white shadow-sm'
                   : 'text-[#475569] hover:text-[#0F172A]'
               }`}
             >
@@ -741,7 +753,7 @@ export default function AdminDashboardPage() {
               onClick={() => setActiveTab('telemetry')}
               className={`px-3 py-1.5 rounded-lg text-xs font-black font-display uppercase tracking-wide transition-all flex items-center gap-1.5 ${
                 activeTab === 'telemetry'
-                  ? 'bg-[#1A1AFF] text-white shadow-sm'
+                  ? 'bg-[#191AFE] text-white shadow-sm'
                   : 'text-[#475569] hover:text-[#0F172A]'
               }`}
             >
@@ -760,7 +772,7 @@ export default function AdminDashboardPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm tên, mã đội, mã BTC..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border-2 border-[#CBD5E1] bg-[#F8FAFC] text-xs font-bold text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF]"
+                className="w-full pl-9 pr-3 py-1.5 rounded-xl border-2 border-[#CBD5E1] bg-[#F8FAFC] text-xs font-bold text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE]"
               />
             </div>
 
@@ -768,7 +780,7 @@ export default function AdminDashboardPage() {
             <select
               value={selectedCaseId}
               onChange={(e) => setSelectedCaseId(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl border-2 border-[#CBD5E1] bg-[#F8FAFC] text-xs font-bold text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1A1AFF]"
+              className="px-2.5 py-1.5 rounded-xl border-2 border-[#CBD5E1] bg-[#F8FAFC] text-xs font-bold text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE]"
             >
               <option value="all">Tất cả vụ án</option>
               {CASES_DATA.map((c) => (
@@ -894,7 +906,7 @@ export default function AdminDashboardPage() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#1A1AFF]/10 border border-[#1A1AFF]/30 text-[#1A1AFF] font-mono font-black text-xs">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#191AFE]/10 border border-[#191AFE]/30 text-[#191AFE] font-mono font-black text-xs">
                               <Clock className="w-3.5 h-3.5" />
                               {formatDuration(item.duration_seconds)}
                             </div>
@@ -930,7 +942,7 @@ export default function AdminDashboardPage() {
             <div className="px-5 py-3.5 bg-[#F8FAFC] border-b-2 border-[#1E293B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#1A1AFF]" />
+                  <Users className="w-4 h-4 text-[#191AFE]" />
                   DANH SÁCH ĐIỀU TRA VIÊN & NGƯỜI CHƠI ĐĂNG KÝ
                 </h2>
                 <p className="text-[11px] font-bold text-[#64748B]">
@@ -945,7 +957,7 @@ export default function AdminDashboardPage() {
                     onClick={() => setParticipantViewMode('unique')}
                     className={`px-2.5 py-1 rounded-md transition-all ${
                       participantViewMode === 'unique'
-                        ? 'bg-[#1A1AFF] text-white shadow-sm'
+                        ? 'bg-[#191AFE] text-white shadow-sm'
                         : 'text-[#475569] hover:text-[#0F172A]'
                     }`}
                   >
@@ -955,7 +967,7 @@ export default function AdminDashboardPage() {
                     onClick={() => setParticipantViewMode('all')}
                     className={`px-2.5 py-1 rounded-md transition-all ${
                       participantViewMode === 'all'
-                        ? 'bg-[#1A1AFF] text-white shadow-sm'
+                        ? 'bg-[#191AFE] text-white shadow-sm'
                         : 'text-[#475569] hover:text-[#0F172A]'
                     }`}
                   >
@@ -1017,7 +1029,24 @@ export default function AdminDashboardPage() {
                             </td>
                             <td className="py-3 px-4 font-medium text-[#475569]">{formatDateTime(p.start_time)}</td>
                             <td className="py-3 px-3 text-center">
-                              <span className="font-bold text-xs">{p.stations_completed || 0}/5 Trạm</span>
+                              <div className="flex flex-col items-center justify-center gap-0.5">
+                                <span className="font-bold text-xs text-[#0F172A]">
+                                  {p.stations_completed || 0}/5 Trạm
+                                </span>
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border whitespace-nowrap ${
+                                  p.is_completed || (p.stations_completed || 0) === 5
+                                    ? 'text-[#065F46] bg-[#ECFDF5] border-[#A7F3D0]'
+                                    : isOnline
+                                    ? 'text-[#1E40AF] bg-[#EFF6FF] border-[#BFDBFE]'
+                                    : 'text-[#475569] bg-[#F1F5F9] border-[#CBD5E1]'
+                                }`}>
+                                  {p.is_completed || (p.stations_completed || 0) === 5
+                                    ? 'Đã xong 5/5 Trạm'
+                                    : isOnline
+                                    ? `Đang ở Trạm ${Math.min(5, (p.stations_completed || 0) + 1)}`
+                                    : `Dừng ở Trạm ${Math.min(5, (p.stations_completed || 0) + 1)}`}
+                                </span>
+                              </div>
                             </td>
                             <td className="py-3 px-3 text-center font-display font-black text-[#059669]">
                               {p.total_score || 0}đ
@@ -1081,7 +1110,24 @@ export default function AdminDashboardPage() {
                             <td className="py-3 px-3 font-medium text-[#475569]">Vụ #{session.case_id}</td>
                             <td className="py-3 px-4 font-medium text-[#475569]">{formatDateTime(session.start_time)}</td>
                             <td className="py-3 px-3 text-center">
-                              <span className="font-bold text-xs">{session.stations_completed || 0}/5 Trạm</span>
+                              <div className="flex flex-col items-center justify-center gap-0.5">
+                                <span className="font-bold text-xs text-[#0F172A]">
+                                  {session.stations_completed || 0}/5 Trạm
+                                </span>
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border whitespace-nowrap ${
+                                  session.is_completed || (session.stations_completed || 0) === 5
+                                    ? 'text-[#065F46] bg-[#ECFDF5] border-[#A7F3D0]'
+                                    : isOnline
+                                    ? 'text-[#1E40AF] bg-[#EFF6FF] border-[#BFDBFE]'
+                                    : 'text-[#475569] bg-[#F1F5F9] border-[#CBD5E1]'
+                                }`}>
+                                  {session.is_completed || (session.stations_completed || 0) === 5
+                                    ? 'Đã xong 5/5 Trạm'
+                                    : isOnline
+                                    ? `Đang ở Trạm ${Math.min(5, (session.stations_completed || 0) + 1)}`
+                                    : `Dừng ở Trạm ${Math.min(5, (session.stations_completed || 0) + 1)}`}
+                                </span>
+                              </div>
                             </td>
                             <td className="py-3 px-3 text-center font-display font-black text-[#059669]">
                               {session.total_score || 0}đ
@@ -1124,7 +1170,7 @@ export default function AdminDashboardPage() {
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-2xl bg-[#1A1AFF] border-2 border-white/30 flex items-center justify-center text-white shadow-inner">
+                    <div className="w-12 h-12 rounded-2xl bg-[#191AFE] border-2 border-white/30 flex items-center justify-center text-white shadow-inner">
                       <Radio className="w-6 h-6 animate-pulse" />
                     </div>
                     <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#10B981] border-2 border-[#0F172A] animate-ping" />
@@ -1198,7 +1244,7 @@ export default function AdminDashboardPage() {
             <div className="game-card p-4 bg-white border-[#1E293B]">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-[#1A1AFF]" />
+                  <Activity className="w-4 h-4 text-[#191AFE]" />
                   <span className="text-xs font-black uppercase text-[#0F172A] tracking-wider">
                     BẢN ĐỒ PHÂN BỔ THÍ SINH THEO 5 TRẠM ĐIỀU TRA
                   </span>
@@ -1215,10 +1261,10 @@ export default function AdminDashboardPage() {
                   return (
                     <div key={stId} className="p-3 rounded-xl bg-[#F8FAFC] border-2 border-[#CBD5E1] text-center">
                       <div className="text-[10px] font-black uppercase text-[#64748B]">TRẠM {stId}</div>
-                      <div className="text-2xl font-display font-black text-[#1A1AFF] my-1">{count}</div>
+                      <div className="text-2xl font-display font-black text-[#191AFE] my-1">{count}</div>
                       <div className="w-full bg-[#E2E8F0] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#1A1AFF] h-full transition-all duration-500 rounded-full"
+                          className="bg-[#191AFE] h-full transition-all duration-500 rounded-full"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -1236,7 +1282,7 @@ export default function AdminDashboardPage() {
               <div className="lg:col-span-7 game-card p-0 bg-white border-[#1E293B] overflow-hidden">
                 <div className="p-4 bg-[#F8FAFC] border-b-2 border-[#CBD5E1] flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-[#1A1AFF]" />
+                    <Users className="w-4 h-4 text-[#191AFE]" />
                     <h3 className="font-display font-black text-xs uppercase text-[#0F172A]">
                       DANH SÁCH THIẾT BỊ HOẠT ĐỘNG ({filteredConnectedDevices.length})
                     </h3>
@@ -1296,7 +1342,7 @@ export default function AdminDashboardPage() {
                                 {dev.teamCode}
                               </span>
                             </td>
-                            <td className="py-2.5 px-2 text-center font-bold text-[#1A1AFF]">
+                            <td className="py-2.5 px-2 text-center font-bold text-[#191AFE]">
                               Trạm {dev.currentStationId}/5
                             </td>
                             <td className="py-2.5 px-2 text-center font-display font-black text-[#059669]">
@@ -1346,7 +1392,7 @@ export default function AdminDashboardPage() {
                       let badgeBg = 'bg-[#334155] text-white';
                       let label: string = evt.eventType;
                       if (evt.eventType === 'STATION_ENTER') {
-                        badgeBg = 'bg-[#1A1AFF] text-white';
+                        badgeBg = 'bg-[#191AFE] text-white';
                         label = 'VÀO TRẠM';
                       } else if (evt.eventType === 'CLUE_DISCOVERED') {
                         badgeBg = 'bg-[#9333EA] text-white';

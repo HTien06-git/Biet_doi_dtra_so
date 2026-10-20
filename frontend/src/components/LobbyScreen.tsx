@@ -87,33 +87,7 @@ export default function LobbyScreen() {
 
   const handleSelectCase = (caseId: number) => {
     sounds.playClick();
-    
-    // Broadcast active in-progress session to Admin immediately
-    const initialSession: PlayerSession = {
-      player_name: state.playerName,
-      team_code: state.teamCode,
-      case_id: caseId,
-      station_scores: [0, 0, 0, 0, 0],
-      total_score: 0,
-      clues_collected: 0,
-      stations_completed: 0,
-      is_completed: false,
-      is_active: true,
-      status: 'playing',
-      start_time: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    savePlayerSession(initialSession);
-
-    multiplayerSync.broadcastEvent({
-      eventType: 'CASE_STARTED',
-      playerName: state.playerName,
-      teamCode: state.teamCode,
-      caseId: caseId,
-      stationId: 1,
-      totalScore: 0,
-    });
-
+    // Chuyển sang màn hình lộ trình các trạm của vụ án (chỉ ghi nhận tham gia khi bấm vào giải trạm)
     dispatch({ type: 'SELECT_CASE', payload: caseId });
   };
 
@@ -171,8 +145,8 @@ export default function LobbyScreen() {
 
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-12">
-      {/* Header Bar Xanh Điện #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
+      {/* Header Bar Xanh Điện #191AFE Chuẩn Thiết Kế */}
+      <header className="sticky top-0 z-30 bg-[#191AFE] border-b-4 border-[#000088] px-3 sm:px-4 py-2 sm:py-2.5 shadow-lg text-white">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           {/* Left: Detective Avatar & Player Name */}
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
@@ -238,7 +212,7 @@ export default function LobbyScreen() {
                 onClick={() => setShowMenu(!showMenu)}
                 className={`p-1.5 rounded-xl border-2 active:translate-y-0.5 shadow-[0_2px_0_#000088] transition-all flex items-center justify-center ${
                   showMenu
-                    ? 'bg-white text-[#1A1AFF] border-white'
+                    ? 'bg-white text-[#191AFE] border-white'
                     : 'bg-white/15 border-white/40 text-white hover:bg-white/25'
                 }`}
                 title="Menu Cài Đặt"
@@ -401,7 +375,7 @@ export default function LobbyScreen() {
 
                   {/* Action Arrow */}
                   <div className="self-center flex-shrink-0">
-                    <div className="w-9 h-9 rounded-full bg-[#1A1AFF] border-2 border-[#000088] flex items-center justify-center shadow-[0_3px_0_#000066] text-white">
+                    <div className="w-9 h-9 rounded-full bg-[#191AFE] border-2 border-[#000088] flex items-center justify-center shadow-[0_3px_0_#000066] text-white">
                       <ChevronRight className="w-5 h-5 text-white stroke-[3]" />
                     </div>
                   </div>
@@ -413,12 +387,12 @@ export default function LobbyScreen() {
 
         {/* Footer Slogan with Admin Link */}
         <div className="game-card p-4 text-center bg-white border-[#1E293B] shadow-sm flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs font-display font-black uppercase text-[#1A1AFF] tracking-wide">
+          <p className="text-xs font-display font-black uppercase text-[#191AFE] tracking-wide">
             🛡️ TỈNH TÁO TRƯỚC THÔNG TIN · PHÂN TÍCH BẰNG CHỨNG · LÀM CHỦ KHÔNG GIAN MẠNG
           </p>
           <Link
             href="/admin"
-            className="text-[11px] font-bold text-[#64748B] hover:text-[#1A1AFF] underline flex items-center gap-1"
+            className="text-[11px] font-bold text-[#64748B] hover:text-[#191AFE] underline flex items-center gap-1"
           >
             <Settings className="w-3.5 h-3.5" />
             Bảng Quản Trị Admin

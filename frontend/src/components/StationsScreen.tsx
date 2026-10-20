@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
+import { multiplayerSync } from '@/lib/multiplayerSync';
 import GameIcon from './GameIcon';
 import AudioController from '@/components/ui/AudioController';
 
@@ -28,6 +29,15 @@ export default function StationsScreen() {
     const canPlay = index === 0 || progress.stations[index - 1]?.completed;
     if (canPlay) {
       sounds.playClick();
+      // Bắt đầu ghi nhận tham gia thi đấu vụ án khi người chơi thực sự bấm vào giải trạm
+      multiplayerSync.broadcastEvent({
+        eventType: 'STATION_ENTER',
+        playerName: state.playerName,
+        teamCode: state.teamCode,
+        caseId: caseData.id,
+        stationId: index + 1,
+        totalScore: progress.totalScore,
+      });
       dispatch({ type: 'SET_STATION', payload: index });
     } else {
       sounds.playWrong();
@@ -42,8 +52,8 @@ export default function StationsScreen() {
 
   return (
     <div className="min-h-screen bg-game-backdrop text-[#0F172A] pb-12">
-      {/* Header Bar Xanh Điện #1A1AFF Chuẩn Thiết Kế */}
-      <header className="sticky top-0 z-30 bg-[#1A1AFF] border-b-4 border-[#000088] px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg text-white">
+      {/* Header Bar Xanh Điện #191AFE Chuẩn Thiết Kế */}
+      <header className="sticky top-0 z-30 bg-[#191AFE] border-b-4 border-[#000088] px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg text-white">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-2.5 sm:gap-3">
           <button
             onClick={handleBack}
@@ -84,7 +94,7 @@ export default function StationsScreen() {
       </header>
 
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-3 sm:pt-6 space-y-3.5 sm:space-y-4">
-        {/* Banner Xanh Chủ Đạo #1A1AFF (Không bao giờ rớt 1 chữ TRƯỜNG xuống dòng) */}
+        {/* Banner Xanh Chủ Đạo #191AFE (Không bao giờ rớt 1 chữ TRƯỜNG xuống dòng) */}
         <div className="game-blue-banner py-2.5 px-3 sm:p-3.5 text-center flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-sm font-black uppercase text-white shadow-md">
           <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FDE047] flex-shrink-0" />
           <span className="hidden sm:inline">LỘ TRÌNH ĐIỀU TRA: VƯỢT 5 TRẠM HIỆN TRƯỜNG</span>
@@ -108,7 +118,7 @@ export default function StationsScreen() {
                   status === 'completed'
                     ? 'bg-[#F0FDF4] border-[#059669]'
                     : status === 'current'
-                    ? 'bg-white border-[#1A1AFF] ring-4 ring-[#1A1AFF]/25 shadow-lg'
+                    ? 'bg-white border-[#191AFE] ring-4 ring-[#191AFE]/25 shadow-lg'
                     : 'bg-[#F8FAFC] opacity-60 cursor-not-allowed'
                 }`}
               >
@@ -118,7 +128,7 @@ export default function StationsScreen() {
                     status === 'completed'
                       ? 'bg-[#10B981] text-white'
                       : status === 'current'
-                      ? 'bg-[#1A1AFF] text-white animate-bounce'
+                      ? 'bg-[#191AFE] text-white animate-bounce'
                       : 'bg-[#CBD5E1] text-[#64748B]'
                   }`}
                 >
@@ -137,7 +147,7 @@ export default function StationsScreen() {
                       </span>
                     )}
                     {status === 'current' && (
-                      <span className="inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-[#1A1AFF] text-white text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider animate-pulse whitespace-nowrap flex-shrink-0">
+                      <span className="inline-block px-1.5 sm:px-2 py-0.5 rounded-md bg-[#191AFE] text-white text-[8.5px] sm:text-[9px] font-black uppercase tracking-wider animate-pulse whitespace-nowrap flex-shrink-0">
                         ĐANG CHỜ
                       </span>
                     )}
