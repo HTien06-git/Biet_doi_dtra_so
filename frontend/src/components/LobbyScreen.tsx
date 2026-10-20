@@ -298,31 +298,31 @@ export default function LobbyScreen() {
         </div>
 
         {/* Mode Status Banner: Thông báo chế độ truy cập do Admin cài đặt */}
-        <div className={`p-3.5 rounded-2xl border-2 flex items-center justify-between gap-3 text-xs font-bold transition-all ${
+        <div className={`p-3 sm:p-3.5 rounded-2xl border-2 flex items-center justify-between gap-2.5 sm:gap-3 text-xs font-bold transition-all ${
           caseAccessMode === 'single'
             ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E]'
             : 'bg-[#EFF6FF] border-[#3B82F6] text-[#1D4ED8]'
         }`}>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
               caseAccessMode === 'single' ? 'bg-[#D97706] text-white' : 'bg-[#3B82F6] text-white'
             }`}>
-              {caseAccessMode === 'single' ? <Lock className="w-4 h-4" /> : <LockOpen className="w-4 h-4" />}
+              {caseAccessMode === 'single' ? <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LockOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             </div>
             <div className="min-w-0">
-              <span className="font-display font-black uppercase text-[11px] block">
-                {caseAccessMode === 'single' ? 'QUY CHẾ: CHẾ ĐỘ THI ĐẤU 1 VỤ ÁN DUY NHẤT' : 'CHẾ ĐỘ TỰ DO: PHÁ TẤT CẢ VỤ ÁN'}
+              <span className="font-display font-black uppercase text-[10px] sm:text-[11px] block truncate">
+                {caseAccessMode === 'single' ? 'QUY CHẾ: THI ĐẤU 1 VỤ ÁN DUY NHẤT' : 'CHẾ ĐỘ TỰ DO: PHÁ TẤT CẢ VỤ ÁN'}
               </span>
-              <p className="text-[11px] font-semibold opacity-90 truncate">
+              <p className="text-[10px] sm:text-[11px] font-semibold opacity-90 truncate">
                 {caseAccessMode === 'single'
                   ? chosenSingleCaseId
-                    ? `Bạn đã đăng ký Vụ án #${chosenSingleCaseId}. Các vụ án khác đã tự động khóa.`
-                    : 'Hãy cân nhắc chọn 1 vụ án để phá. Sau khi chọn, các vụ khác sẽ tự động bị khóa!'
-                  : 'Người chơi được tự do tham gia phá tất cả 4 vụ án không giới hạn.'}
+                    ? `Đã đăng ký Vụ #${chosenSingleCaseId}. Các vụ khác tự động khóa.`
+                    : 'Chọn 1 vụ án để phá. Sau khi chọn, các vụ khác sẽ tự động khóa!'
+                  : 'Người chơi được tự do tham gia phá tất cả các vụ án.'}
               </p>
             </div>
           </div>
-          <span className={`px-2 py-0.5 rounded-md font-mono text-[10px] font-black uppercase flex-shrink-0 border ${
+          <span className={`px-2 py-0.5 rounded-md font-mono text-[9px] sm:text-[10px] font-black uppercase flex-shrink-0 border whitespace-nowrap ${
             caseAccessMode === 'single'
               ? 'bg-[#FDE68A] text-[#78350F] border-[#D97706]'
               : 'bg-[#DBEAFE] text-[#1E40AF] border-[#3B82F6]'
@@ -373,9 +373,10 @@ export default function LobbyScreen() {
 
                 {/* Lock Stamp / Badge */}
                 {isLocked && (
-                  <div className="absolute top-3 right-4 sm:right-6 border-2 border-[#D97706] text-[#B45309] bg-[#FEF3C7] font-display font-black text-[10px] px-2.5 py-1 rounded-xl uppercase shadow-sm flex items-center gap-1">
-                    <Lock className="w-3.5 h-3.5 text-[#D97706]" />
-                    <span>ĐÃ KHÓA (CHẾ ĐỘ 1 VỤ ÁN)</span>
+                  <div className="absolute top-2.5 sm:top-3 right-3 sm:right-6 border-2 border-[#D97706] text-[#B45309] bg-[#FEF3C7] font-display font-black text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl uppercase shadow-sm flex items-center gap-1 whitespace-nowrap z-10">
+                    <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D97706] flex-shrink-0" />
+                    <span className="hidden sm:inline">ĐÃ KHÓA (CHẾ ĐỘ 1 VỤ ÁN)</span>
+                    <span className="sm:hidden">ĐÃ KHÓA</span>
                   </div>
                 )}
 

@@ -8,7 +8,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, X, Sparkles, RefreshCw, Users, Shield, CheckCircle,
-  ChevronDown, ChevronUp, UserCheck, Flame, Star, Search, Clock
+  ChevronDown, ChevronUp, UserCheck, Flame, Star, Search, Clock,
+  Crown, Medal, Award
 } from 'lucide-react';
 import { getAllSessions, PlayerSession } from '@/lib/supabase';
 import { CASES_DATA } from '@/data/casesData';
@@ -202,25 +203,28 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
     switch (rank) {
       case 1:
         return (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-[#FDE047] to-[#F59E0B] border-2 border-[#854D0E] flex items-center justify-center font-display font-black text-sm text-[#451A03] shadow-[0_2px_0_#854D0E]">
-            🥇 1
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-[#FEF08A] to-[#F59E0B] border-2 border-[#854D0E] flex items-center justify-center font-display font-black text-xs text-[#451A03] shadow-[0_2px_0_#854D0E] gap-0.5 flex-shrink-0">
+            <Crown className="w-3.5 h-3.5 text-[#854D0E] fill-current" />
+            <span>1</span>
           </div>
         );
       case 2:
         return (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-[#E2E8F0] to-[#CBD5E1] border-2 border-[#475569] flex items-center justify-center font-display font-black text-sm text-[#1E293B] shadow-[0_2px_0_#475569]">
-            🥈 2
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-[#F1F5F9] to-[#CBD5E1] border-2 border-[#475569] flex items-center justify-center font-display font-black text-xs text-[#1E293B] shadow-[0_2px_0_#475569] gap-0.5 flex-shrink-0">
+            <Medal className="w-3.5 h-3.5 text-[#475569] fill-current" />
+            <span>2</span>
           </div>
         );
       case 3:
         return (
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-[#FED7AA] to-[#F97316] border-2 border-[#9A3412] flex items-center justify-center font-display font-black text-sm text-[#7C2D12] shadow-[0_2px_0_#9A3412]">
-            🥉 3
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-[#FFEDD5] to-[#FB923C] border-2 border-[#9A3412] flex items-center justify-center font-display font-black text-xs text-[#7C2D12] shadow-[0_2px_0_#9A3412] gap-0.5 flex-shrink-0">
+            <Award className="w-3.5 h-3.5 text-[#9A3412] fill-current" />
+            <span>3</span>
           </div>
         );
       default:
         return (
-          <div className="w-9 h-9 rounded-xl bg-[#F1F5F9] border-2 border-[#CBD5E1] flex items-center justify-center font-display font-black text-xs text-[#64748B]">
+          <div className="w-9 h-9 rounded-xl bg-[#F1F5F9] border-2 border-[#CBD5E1] flex items-center justify-center font-display font-black text-xs text-[#64748B] flex-shrink-0">
             #{rank}
           </div>
         );
@@ -244,22 +248,22 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
           >
             {/* Header Xanh Điện #191AFE Chuẩn Nhận Diện */}
             <div className="bg-[#191AFE] border-b-4 border-[#000088] p-3 sm:p-4 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white shadow-[0_2px_0_#000088]">
-                  <Trophy className="w-6 h-6 fill-current text-[#FDE047]" />
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-white shadow-[0_2px_0_#000088] flex-shrink-0">
+                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 fill-current text-[#FDE047]" />
                 </div>
-                <div>
-                  <h2 className="text-base sm:text-lg font-display font-black uppercase tracking-tight flex items-center gap-1.5 text-white">
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-lg font-display font-black uppercase tracking-tight flex items-center gap-1.5 text-white truncate">
                     BẢNG VÀNG THÀNH TÍCH GIẢI ĐẤU
-                    <Sparkles className="w-4 h-4 text-[#FDE047]" />
+                    <Sparkles className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
                   </h2>
-                  <p className="text-[11px] font-bold text-white/80">
+                  <p className="text-[10px] sm:text-[11px] font-bold text-white/80 truncate">
                     Vinh danh thành tích cá nhân & xếp hạng liên minh đội
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                 <button
                   onClick={() => {
                     sounds.playClick();
@@ -284,20 +288,20 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
 
             {/* View Mode Switcher: Cá Nhân vs Đội */}
             <div className="bg-[#0F172A] p-2 flex items-center justify-between gap-2 border-b-2 border-[#1E293B]">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
                 <button
                   onClick={() => {
                     sounds.playSelect();
                     setViewMode('individual');
                   }}
-                  className={`px-3 py-1.5 rounded-xl font-display font-black text-xs uppercase flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl font-display font-black text-[11px] sm:text-xs uppercase flex items-center gap-1.5 whitespace-nowrap transition-all ${
                     viewMode === 'individual'
                       ? 'bg-[#FDE047] text-[#0F172A] shadow-[0_2px_0_#854D0E]'
                       : 'bg-[#1E293B] text-white/80 hover:bg-[#334155]'
                   }`}
                 >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Xếp Hạng Cá Nhân</span>
+                  <UserCheck className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Xếp Hạng Cá Nhân</span>
                 </button>
 
                 <button
@@ -305,18 +309,18 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                     sounds.playSelect();
                     setViewMode('team');
                   }}
-                  className={`px-3 py-1.5 rounded-xl font-display font-black text-xs uppercase flex items-center gap-1.5 transition-all ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-xl font-display font-black text-[11px] sm:text-xs uppercase flex items-center gap-1.5 whitespace-nowrap transition-all ${
                     viewMode === 'team'
                       ? 'bg-[#FDE047] text-[#0F172A] shadow-[0_2px_0_#854D0E]'
                       : 'bg-[#1E293B] text-white/80 hover:bg-[#334155]'
                   }`}
                 >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Xếp Hạng Đội ({teamRankings.length})</span>
+                  <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Xếp Hạng Đội ({teamRankings.length})</span>
                 </button>
               </div>
 
-              <span className="text-[10px] font-bold text-white/70 hidden sm:inline">
+              <span className="text-[10px] font-bold text-white/70 hidden sm:inline whitespace-nowrap">
                 {viewMode === 'individual' ? 'Thành tích theo điều tra viên' : 'Tổng điểm các user cùng mã đội'}
               </span>
             </div>
@@ -590,7 +594,7 @@ export default function LeaderboardModal({ isOpen, onClose, highlightPlayer }: L
                                           </span>
                                         </td>
                                         <td className="py-2 px-2 text-center font-bold">
-                                          {m.stations_completed}/5 trạm
+                                          {m.stations_completed || 0}/5 trạm
                                         </td>
                                         <td className="py-2 px-3 text-center">
                                           <span className="font-display font-black text-[#059669]">

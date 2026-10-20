@@ -14,17 +14,17 @@ import SummaryScreen from '@/components/SummaryScreen';
 import LeaderboardModal from '@/components/LeaderboardModal';
 import { Volume2, VolumeX, Trophy } from 'lucide-react';
 import { sounds } from '@/lib/sounds';
+import { useAudio } from '@/hooks/useAudio';
+import AudioController from '@/components/ui/AudioController';
 
 function GameContainer() {
   const { state } = useGame();
-  const [soundEnabled, setSoundEnabled] = useState(() => sounds.isEnabled());
+  const { ensureAutoplay } = useAudio();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
-  const handleToggleSound = () => {
-    const next = sounds.toggle();
-    setSoundEnabled(next);
-    if (next) sounds.playClick();
-  };
+  useEffect(() => {
+    ensureAutoplay();
+  }, [ensureAutoplay]);
 
   const renderScreen = () => {
     switch (state.currentScreen) {
@@ -45,20 +45,10 @@ function GameContainer() {
 
   return (
     <main className="relative min-h-screen bg-game-backdrop text-[#1E293B] selection:bg-[#FFCA28] selection:text-[#3E2723]">
-      {/* Top Floating Sound Control on Welcome Screen only */}
+      {/* Top Floating Sound Control on Welcome Screen */}
       {state.currentScreen === 'welcome' && (
         <div className="fixed top-3 right-3 z-50 flex items-center gap-2">
-          <button
-            onClick={handleToggleSound}
-            className="w-9 h-9 rounded-full bg-white border-2 border-[#1E293B] text-[#0F172A] hover:bg-[#F8FAFC] flex items-center justify-center shadow-[0_3px_0_#1E293B] active:translate-y-0.5 transition-all"
-            title={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}
-          >
-            {soundEnabled ? (
-              <Volume2 className="w-4 h-4 text-[#191AFE]" />
-            ) : (
-              <VolumeX className="w-4 h-4 text-[#64748B]" />
-            )}
-          </button>
+          <AudioController />
         </div>
       )}
 

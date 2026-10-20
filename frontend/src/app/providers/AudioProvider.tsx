@@ -17,6 +17,7 @@ interface AudioContextType {
   resumeBGM: () => void;
   toggleMute: () => void;
   setVolume: (level: number) => void;
+  ensureAutoplay: () => void;
   playSFX: (type: 'correct' | 'wrong' | 'click' | 'magnify' | 'select' | 'open') => void;
 }
 
@@ -29,7 +30,7 @@ const STORAGE_VOLUME_KEY = 'game_sound_volume';
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [volume, setVolumeState] = useState<number>(0.4);
+  const [volume, setVolumeState] = useState<number>(0.35);
   const [currentTrack, setCurrentTrack] = useState<string>(DEFAULT_BGM);
 
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -39,44 +40,42 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Load stored preferences
-    const storedMuted = localStorage.getItem(STORAGE_MUTED_KEY);
+    // Load stored preferences (ưu tiên mặc định BẬT NHẠC cho trải nghiệm game sôi động)
     const storedVolume = localStorage.getItem(STORAGE_VOLUME_KEY);
+    const initialVolume = storedVolume ? parseFloat(storedVolume) : 0.35;
 
-    const initialMuted = storedMuted === 'true';
-    const initialVolume = storedVolume ? parseFloat(storedVolume) : 0.4;
-
-    setIsMuted(initialMuted);
+    setIsMuted(false);
     setVolumeState(initialVolume);
 
     // Create persistent HTML5 Audio instance for BGM
     const audio = new Audio(DEFAULT_BGM);
     audio.loop = true;
-    audio.volume = initialMuted ? 0 : initialVolume;
+    audio.volume = initialVolume;
     audio.preload = 'auto';
     bgmAudioRef.current = audio;
 
-    // Attempt autoplay
+    // Attempt autoplay immediately upon landing
     const tryAutoplay = () => {
-      if (initialMuted) return;
       audio.play().then(() => {
         setIsPlaying(true);
         hasInteractedRef.current = true;
       }).catch(() => {
-        // Autoplay blocked by browser policy -> wait for first user gesture
+        // Trình duyệt chặn tự phát âm thanh -> chờ tương tác đầu tiên của người dùng
         setIsPlaying(false);
       });
     };
 
     tryAutoplay();
 
-    // Global listener for first user interaction (touch, click, key) to unlock autoplay
+    // Global listener for first user interaction (touch, click, pointer, scroll, key) to immediately unlock and play BGM
     const unlockAutoplay = () => {
-      if (hasInteractedRef.current) return;
+      if (hasInteractedRef.current && bgmAudioRef.current && !bgmAudioRef.current.paused) return;
       hasInteractedRef.current = true;
 
       const currentAudio = bgmAudioRef.current;
-      if (currentAudio && !currentAudio.muted && currentAudio.paused) {
+      if (currentAudio) {
+        currentAudio.muted = false;
+        currentAudio.volume = initialVolume;
         currentAudio.play().then(() => {
           setIsPlaying(true);
         }).catch((err) => {
@@ -84,19 +83,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      window.removeEventListener('click', unlockAutoplay);
-      window.removeEventListener('touchstart', unlockAutoplay);
-      window.removeEventListener('keydown', unlockAutoplay);
+      cleanupListeners();
     };
 
-    window.addEventListener('click', unlockAutoplay, { passive: true });
-    window.addEventListener('touchstart', unlockAutoplay, { passive: true });
-    window.addEventListener('keydown', unlockAutoplay, { passive: true });
+    const cleanupListeners = () => {
+      ['pointerdown', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown', 'scroll'].forEach((evt) => {
+        window.removeEventListener(evt, unlockAutoplay);
+        document.removeEventListener(evt, unlockAutoplay);
+      });
+    };
+
+    ['pointerdown', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown', 'scroll'].forEach((evt) => {
+      window.addEventListener(evt, unlockAutoplay, { passive: true, once: true });
+      document.addEventListener(evt, unlockAutoplay, { passive: true, once: true });
+    });
 
     return () => {
-      window.removeEventListener('click', unlockAutoplay);
-      window.removeEventListener('touchstart', unlockAutoplay);
-      window.removeEventListener('keydown', unlockAutoplay);
+      cleanupListeners();
       if (bgmAudioRef.current) {
         bgmAudioRef.current.pause();
         bgmAudioRef.current = null;
@@ -111,6 +114,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       bgmAudioRef.current.muted = isMuted;
     }
   }, [isMuted, volume]);
+
+  const ensureAutoplay = useCallback(() => {
+    const audio = bgmAudioRef.current;
+    if (audio && audio.paused && !isMuted) {
+      audio.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {});
+    }
+  }, [isMuted]);
 
   const playBGM = useCallback((trackUrl?: string) => {
     const audio = bgmAudioRef.current;
@@ -236,6 +248,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         resumeBGM,
         toggleMute,
         setVolume,
+        ensureAutoplay,
         playSFX,
       }}
     >

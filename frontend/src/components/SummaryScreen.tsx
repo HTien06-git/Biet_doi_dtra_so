@@ -7,7 +7,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Award, ShieldCheck, Copy, Check,
-  ChevronRight, Eye, Star, FileText, AlertOctagon, Download, X, Home
+  ChevronRight, Eye, Star, FileText, AlertOctagon, Download, X, Home,
+  XCircle, CheckCircle2
 } from 'lucide-react';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
@@ -31,12 +32,13 @@ export default function SummaryScreen() {
   }, []);
 
   const totalScore = progress?.totalScore || 0;
+  // Sổ tay bằng chứng ghi nhận đầy đủ 5 trạm thử thách của vụ án
   const stationsToDisplay = useMemo(() => caseData?.stations || [], [caseData]);
   const cluesCount = useMemo(() => {
     return stationsToDisplay.filter((_, idx) => progress?.stations[idx]?.clueUnlocked).length;
   }, [stationsToDisplay, progress]);
   const stationsCompletedCount = useMemo(() => {
-    return progress?.stationsCompleted || 5;
+    return progress?.stationsCompleted || 0;
   }, [progress]);
 
   const rankInfo = useMemo(() => {
@@ -201,21 +203,21 @@ export default function SummaryScreen() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t-2 border-[#1E293B]/20">
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
               <span className="text-xl sm:text-2xl font-display font-black text-[#191AFE]">{totalScore}/100</span>
-              <span className="text-[10px] font-black uppercase text-[#64748B] block">Tổng Điểm</span>
+              <span className="text-[10px] font-black uppercase text-[#64748B] block whitespace-nowrap">Tổng Điểm</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
               <span className="text-xl sm:text-2xl font-display font-black text-[#D97706]">{cluesCount}/5</span>
-              <span className="text-[10px] font-black uppercase text-[#64748B] block">Manh Mối</span>
+              <span className="text-[10px] font-black uppercase text-[#64748B] block whitespace-nowrap">Manh Mối</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
               <span className="text-xl sm:text-2xl font-display font-black text-[#059669]">{stationsCompletedCount}/5</span>
-              <span className="text-[10px] font-black uppercase text-[#64748B] block">Trạm Đã Qua</span>
+              <span className="text-[10px] font-black uppercase text-[#64748B] block whitespace-nowrap">Trạm Đã Qua</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#7C3AED]">
+              <span className="text-xl sm:text-2xl font-display font-black text-[#7C3AED] truncate block">
                 {progress.durationSeconds ? `${Math.floor(progress.durationSeconds / 60)}p ${progress.durationSeconds % 60}s` : 'Vừa xong'}
               </span>
-              <span className="text-[10px] font-black uppercase text-[#64748B] block">Thời Gian Phá Án</span>
+              <span className="text-[10px] font-black uppercase text-[#64748B] block whitespace-nowrap">Thời Gian</span>
             </div>
           </div>
         </div>
@@ -304,7 +306,7 @@ export default function SummaryScreen() {
           </div>
         </div>
 
-        {/* Evidence Board (5 Clues Unlocked) */}
+        {/* Evidence Board (5 Clues Recorded) */}
         <div className="game-card p-5 bg-white space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-black text-sm uppercase text-[#3E2723] flex items-center gap-2">
@@ -335,8 +337,8 @@ export default function SummaryScreen() {
                       {isUnlocked ? (
                         <GameIcon type="folder" size="sm" theme="amber" />
                       ) : (
-                        <div className="w-7 h-7 rounded-lg bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center text-xs font-black text-[#DC2626]">
-                          ❌
+                        <div className="w-8 h-8 rounded-xl bg-[#FEE2E2] border-2 border-[#DC2626] flex items-center justify-center text-[#DC2626] shadow-sm">
+                          <XCircle className="w-4 h-4 stroke-[2.5]" />
                         </div>
                       )}
                     </div>

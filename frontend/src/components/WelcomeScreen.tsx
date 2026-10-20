@@ -3,18 +3,24 @@
 // ============================================================================
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, User, Users, ShieldAlert, Settings, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useGame } from '@/lib/gameStore';
 import { sounds } from '@/lib/sounds';
+import { useAudio } from '@/hooks/useAudio';
 import { DetectiveIllustration } from '@/assets/illustrations';
 import GameIcon from './GameIcon';
 import { multiplayerSync } from '@/lib/multiplayerSync';
 
 export default function WelcomeScreen() {
   const { dispatch } = useGame();
+  const { ensureAutoplay } = useAudio();
+
+  useEffect(() => {
+    ensureAutoplay();
+  }, [ensureAutoplay]);
   const [playerName, setPlayerName] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -53,6 +59,7 @@ export default function WelcomeScreen() {
       return;
     }
 
+    ensureAutoplay();
     sounds.playClick();
     setError('');
     setIsLoading(true);

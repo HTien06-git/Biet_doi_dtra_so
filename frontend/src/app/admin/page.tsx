@@ -7,7 +7,8 @@ import {
   Shield, Key, Unlock, Trophy, Users, Clock, Download, RefreshCw,
   Search, ArrowLeft, CheckCircle2, AlertCircle, Trash2,
   LogOut, Activity, Radio,
-  Zap, Server, Wifi, Square, ChevronDown, ChevronUp, Settings, Lock, LockOpen, Eye
+  Zap, Server, Wifi, Square, ChevronDown, ChevronUp, Settings, Lock, LockOpen, Eye,
+  Crown, Medal, Award
 } from 'lucide-react';
 import { PlayerSession, getAllSessions } from '@/lib/supabase';
 import { CASES_DATA } from '@/data/casesData';
@@ -1036,20 +1037,23 @@ export default function AdminDashboardPage() {
                           );
                           if (isTop1) {
                             rankBadge = (
-                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF08A] border-2 border-[#CA8A04] text-[#854D0E] font-black shadow-sm text-xs">
-                                🥇 1
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-b from-[#FEF08A] to-[#F59E0B] border-2 border-[#854D0E] text-[#451A03] font-black shadow-sm text-xs gap-0.5">
+                                <Crown className="w-3.5 h-3.5 text-[#854D0E] fill-current" />
+                                <span>1</span>
                               </span>
                             );
                           } else if (isTop2) {
                             rankBadge = (
-                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#E2E8F0] border-2 border-[#94A3B8] text-[#334155] font-black shadow-sm text-xs">
-                                🥈 2
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-b from-[#F1F5F9] to-[#CBD5E1] border-2 border-[#475569] text-[#1E293B] font-black shadow-sm text-xs gap-0.5">
+                                <Medal className="w-3.5 h-3.5 text-[#475569] fill-current" />
+                                <span>2</span>
                               </span>
                             );
                           } else if (isTop3) {
                             rankBadge = (
-                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FED7AA] border-2 border-[#EA580C] text-[#9A3412] font-black shadow-sm text-xs">
-                                🥉 3
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-b from-[#FFEDD5] to-[#FB923C] border-2 border-[#9A3412] text-[#7C2D12] font-black shadow-sm text-xs gap-0.5">
+                                <Award className="w-3.5 h-3.5 text-[#9A3412] fill-current" />
+                                <span>3</span>
                               </span>
                             );
                           }
@@ -1072,7 +1076,7 @@ export default function AdminDashboardPage() {
                                   </span>
                                 </td>
                                 <td className="py-3 px-3">
-                                  <span className="inline-block px-2 py-0.5 rounded-md bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] font-mono font-black text-[11px]">
+                                  <span className="inline-block px-2 py-0.5 rounded-md bg-[#EFF6FF] border border-[#BFDBFE] text-[#1E40AF] font-mono font-black text-[11px] whitespace-nowrap">
                                     {item.team_code}
                                   </span>
                                 </td>
@@ -1087,7 +1091,7 @@ export default function AdminDashboardPage() {
                                           <span
                                             key={sIdx}
                                             title={st?.title ? `${st.title}: ${score}đ` : `Trạm ${sIdx + 1}: ${score}đ`}
-                                            className={`px-1.5 py-0.5 rounded text-[10px] font-black border transition-all ${
+                                            className={`px-1.5 py-0.5 rounded text-[10px] font-black border transition-all whitespace-nowrap inline-flex items-center ${
                                               isPassed
                                                 ? 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]'
                                                 : 'bg-[#FEF2F2] text-[#991B1B] border-[#FECACA] line-through'
@@ -1098,7 +1102,7 @@ export default function AdminDashboardPage() {
                                         );
                                       })}
                                     </div>
-                                    <span className="text-[10px] font-bold text-[#64748B]">
+                                    <span className="text-[10px] font-bold text-[#64748B] whitespace-nowrap">
                                       Hoàn thành {item.stations_completed || totalStations}/{totalStations} trạm
                                     </span>
                                   </div>
@@ -1244,11 +1248,26 @@ export default function AdminDashboardPage() {
                             <span className="font-display font-black text-xs text-[#64748B]">#{tIdx + 1}</span>
                           );
                           if (isTop1) {
-                            rankBadge = <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FEF08A] border-2 border-[#CA8A04] text-[#854D0E] font-black shadow-sm text-xs">🥇 1</span>;
+                            rankBadge = (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-b from-[#FEF08A] to-[#F59E0B] border-2 border-[#854D0E] text-[#451A03] font-black shadow-sm text-xs gap-0.5">
+                                <Crown className="w-3.5 h-3.5 text-[#854D0E] fill-current" />
+                                <span>1</span>
+                              </span>
+                            );
                           } else if (isTop2) {
-                            rankBadge = <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#E2E8F0] border-2 border-[#94A3B8] text-[#334155] font-black shadow-sm text-xs">🥈 2</span>;
+                            rankBadge = (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-b from-[#F1F5F9] to-[#CBD5E1] border-2 border-[#475569] text-[#1E293B] font-black shadow-sm text-xs gap-0.5">
+                                <Medal className="w-3.5 h-3.5 text-[#475569] fill-current" />
+                                <span>2</span>
+                              </span>
+                            );
                           } else if (isTop3) {
-                            rankBadge = <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FED7AA] border-2 border-[#EA580C] text-[#9A3412] font-black shadow-sm text-xs">🥉 3</span>;
+                            rankBadge = (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-b from-[#FFEDD5] to-[#FB923C] border-2 border-[#9A3412] text-[#7C2D12] font-black shadow-sm text-xs gap-0.5">
+                                <Award className="w-3.5 h-3.5 text-[#9A3412] fill-current" />
+                                <span>3</span>
+                              </span>
+                            );
                           }
 
                           return (
