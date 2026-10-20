@@ -31,12 +31,12 @@ export default function SummaryScreen() {
   }, []);
 
   const totalScore = progress?.totalScore || 0;
-  const stationsToDisplay = useMemo(() => caseData?.stations.slice(0, 4) || [], [caseData]);
+  const stationsToDisplay = useMemo(() => caseData?.stations || [], [caseData]);
   const cluesCount = useMemo(() => {
     return stationsToDisplay.filter((_, idx) => progress?.stations[idx]?.clueUnlocked).length;
   }, [stationsToDisplay, progress]);
   const stationsCompletedCount = useMemo(() => {
-    return Math.min(progress?.stationsCompleted || 4, 4);
+    return progress?.stationsCompleted || 5;
   }, [progress]);
 
   const rankInfo = useMemo(() => {
@@ -204,11 +204,11 @@ export default function SummaryScreen() {
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Tổng Điểm</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#D97706]">{cluesCount}/4</span>
+              <span className="text-xl sm:text-2xl font-display font-black text-[#D97706]">{cluesCount}/5</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Manh Mối</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
-              <span className="text-xl sm:text-2xl font-display font-black text-[#059669]">{stationsCompletedCount}/4</span>
+              <span className="text-xl sm:text-2xl font-display font-black text-[#059669]">{stationsCompletedCount}/5</span>
               <span className="text-[10px] font-black uppercase text-[#64748B] block">Trạm Đã Qua</span>
             </div>
             <div className="p-3 bg-[#F1F5F9] border-2 border-[#1E293B] rounded-xl text-center">
@@ -304,17 +304,17 @@ export default function SummaryScreen() {
           </div>
         </div>
 
-        {/* Evidence Board (4 Clues Unlocked) */}
+        {/* Evidence Board (5 Clues Unlocked) */}
         <div className="game-card p-5 bg-white space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-black text-sm uppercase text-[#3E2723] flex items-center gap-2">
               <Eye className="w-4 h-4 text-[#D97706]" />
-              SỔ TAY BẰNG CHỨNG ĐÃ THU THẬP ({cluesCount}/4)
+              SỔ TAY BẰNG CHỨNG ĐÃ THU THẬP ({cluesCount}/5)
             </h3>
             <span className="text-[11px] font-bold text-[#64748B]">Bấm vào để đọc chi tiết</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {stationsToDisplay.map((st, idx) => {
               const isUnlocked = progress.stations[idx]?.clueUnlocked;
               return (

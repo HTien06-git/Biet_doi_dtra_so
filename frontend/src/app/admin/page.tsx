@@ -335,17 +335,24 @@ export default function AdminDashboardPage() {
     });
   }, [sessions, searchQuery, selectedCaseId, filterStatus, MOCK_TEAMS, MOCK_NAMES, isPlayerOnline]);
 
-  // 5-station challenge Leaderboard (Fastest to Slowest)
+  // 5-station challenge Leaderboard: Xếp hạng theo ĐIỂM SỐ CAO NHẤT LÊN TRƯỚC (từ cao tới thấp), bằng điểm xét thời gian nhanh hơn
   const leaderboard5Stations = useMemo(() => {
-    // Only completed 5 stations
+    // Lấy các thí sinh đã hoàn thành vụ án hoặc hoàn thành 5 trạm
     const completedList = filteredSessions.filter((s) => s.is_completed || s.stations_completed === 5);
 
-    // Sort: FASTEST duration first (duration_seconds ASC), then total_score DESC
+    // Sort: ĐIỂM SỐ CAO NHẤT LÊN TRƯỚC (total_score DESC), bằng điểm thì THỜI GIAN NHANH HƠN (duration_seconds ASC)
     return [...completedList].sort((a, b) => {
+      const scoreA = a.total_score || 0;
+      const scoreB = b.total_score || 0;
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA; // Điểm nhiều nhất lên trước
+      }
       const durationA = a.duration_seconds ?? 999999;
       const durationB = b.duration_seconds ?? 999999;
-      if (durationA !== durationB) return durationA - durationB;
-      return (b.total_score || 0) - (a.total_score || 0);
+      if (durationA !== durationB) {
+        return durationA - durationB; // Bằng điểm thì thời gian nhanh hơn đứng trên
+      }
+      return (b.clues_collected || 0) - (a.clues_collected || 0);
     });
   }, [filteredSessions]);
 
@@ -976,14 +983,14 @@ export default function AdminDashboardPage() {
                   <div>
                     <h2 className="font-display font-black text-sm uppercase text-[#0F172A] flex items-center gap-2">
                       <Trophy className="w-4 h-4 text-[#EAB308]" />
-                      BẢNG XẾP HẠNG TỐC ĐỘ HOÀN THÀNH 5 TRẠM THỬ THÁCH
+                      BẢNG XẾP HẠNG THÀNH TÍCH PHÁ ÁN (5 TRẠM THỬ THÁCH)
                     </h2>
                     <p className="text-[11px] font-bold text-[#64748B]">
-                      Xếp hạng từ <strong>Nhanh nhất đến Chậm nhất</strong> · Nhấn vào hàng để xem chi tiết trạm hoàn thành
+                      Xếp hạng theo <strong>Điểm số từ Cao tới Thấp</strong> (Bằng điểm ưu tiên tốc độ nhanh hơn) · Nhấn vào hàng để xem chi tiết trạm hoàn thành
                     </p>
                   </div>
                   <span className="game-badge game-badge-yellow text-[10px] font-black">
-                    {leaderboard5Stations.length} ĐỘI HOÀN TẤT
+                    {leaderboard5Stations.length} LƯỢT HOÀN TẤT
                   </span>
                 </div>
 
