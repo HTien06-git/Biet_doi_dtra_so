@@ -6,7 +6,7 @@ declare global {
   var __DTS_CASE_ACCESS_MODE__: 'single' | 'multi' | undefined;
 }
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'Admin@2026';
 
 export async function GET() {
   try {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { caseAccessMode, password } = body;
 
-    if (password && password !== ADMIN_PASSWORD && password !== 'DTS@2026') {
+    if (password && password !== ADMIN_PASSWORD && password !== 'Admin@2026') {
       return NextResponse.json({ success: false, error: 'Chưa được cấp quyền Admin' }, { status: 401 });
     }
 

@@ -7,7 +7,7 @@ import {
   Shield, Key, Unlock, Trophy, Users, Clock, Download, RefreshCw,
   Search, ArrowLeft, CheckCircle2, AlertCircle, Trash2,
   LogOut, Activity, Radio,
-  Zap, Server, Wifi, Square, ChevronDown, ChevronUp, Settings, Lock, LockOpen, Eye,
+  Zap, Server, Wifi, Square, ChevronDown, ChevronUp, Settings, Lock, LockOpen, Eye, EyeOff,
   Crown, Medal, Award
 } from 'lucide-react';
 import { PlayerSession, getAllSessions } from '@/lib/supabase';
@@ -17,11 +17,12 @@ import { TelemetryEvent, ConnectedDevice } from '@/types/case';
 import AudioController from '@/components/ui/AudioController';
 
 // Fallback password if env is not loaded on client
-const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
+const DEFAULT_ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'Admin@2026';
 
 export default function AdminDashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passwordInput, setPasswordInput] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string>('');
   const [sessions, setSessions] = useState<PlayerSession[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -222,7 +223,7 @@ export default function AdminDashboardPage() {
 
   const handleLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (passwordInput === DEFAULT_ADMIN_PASSWORD || passwordInput === 'admin123' || passwordInput === 'DTS@2026') {
+    if (passwordInput === DEFAULT_ADMIN_PASSWORD || passwordInput === 'Admin@2026') {
       sessionStorage.setItem('dts_admin_auth', 'true');
       setIsAuthenticated(true);
       setAuthError('');
@@ -668,14 +669,24 @@ export default function AdminDashboardPage() {
                 <Key className="w-4 h-4 text-[#191AFE]" />
                 Mật Khẩu Quản Trị (Admin PIN / Password)
               </label>
-              <input
-                type="password"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Nhập mã PIN hoặc mật khẩu..."
-                className="w-full px-4 py-3 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE] shadow-[0_2px_0_#1E293B]"
-                autoFocus
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Nhập mã PIN hoặc mật khẩu..."
+                  className="w-full px-4 py-3 pr-11 rounded-xl border-3 border-[#1E293B] bg-[#F8FAFC] font-bold text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#191AFE] shadow-[0_2px_0_#1E293B]"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#191AFE] p-1 transition-colors"
+                  title={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -687,12 +698,11 @@ export default function AdminDashboardPage() {
             </button>
           </form>
 
-          <div className="pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs font-bold text-[#64748B]">
+          <div className="pt-2 border-t border-[#E2E8F0] flex items-center justify-center text-xs font-bold text-[#64748B]">
             <Link href="/" className="hover:text-[#191AFE] flex items-center gap-1">
               <ArrowLeft className="w-3.5 h-3.5" />
               Về trang game
             </Link>
-            <span className="text-[11px] text-[#94A3B8]">Mặc định: admin123</span>
           </div>
         </motion.div>
       </div>

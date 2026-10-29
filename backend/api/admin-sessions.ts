@@ -13,7 +13,7 @@ import {
 const ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD ||
   process.env.NEXT_PUBLIC_ADMIN_PASSWORD ||
-  'admin123';
+  'Admin@2026';
 
 export default async function handler(req: any, res: any) {
   // Bật CORS cho các yêu cầu từ Web App

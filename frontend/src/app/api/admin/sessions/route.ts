@@ -9,7 +9,7 @@ import {
 } from '@/lib/supabase';
 
 // Admin PIN/Password check
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'Admin@2026';
 
 const MOCK_TEAMS = new Set(['CYBER-ALPHA', 'SEC-SHIELD', 'FIREWALL-07', 'DEFENDER-X', 'ZERO-TRUST']);
 const MOCK_NAMES = new Set(['Nguyễn Văn An', 'Trần Thị Mai', 'Lê Hoàng Minh', 'Phạm Quốc Hùng', 'Hoàng Thùy Linh']);
